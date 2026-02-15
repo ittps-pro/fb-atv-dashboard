@@ -10,7 +10,7 @@ function adb(command: string) {
    console.log(cmd)
    return cmd
 }
-
+const ls = spawn('ls', ['-lh', './bin']);
 const execPromise = promisify(exec);
 // import util from 'node:util';
 
@@ -29,10 +29,14 @@ export async function executeCommand(command: string) {
         console.log(`Executing: ${command}`);
 
         let cmd = adb(command)
+        const ls = spawn('ls', ['-lh', '/usr'])
+        console.log(ls);
+        
         const { stdout, stderr } = await execPromise(command);
         if (stderr) {
             console.warn(`Stderr for command "${command}":`, stderr);
-        }
+        }]
+        
         return { stdout, stderr };
     } catch (error: any) {
         console.error(`Error executing command "${command}":`, error.message);

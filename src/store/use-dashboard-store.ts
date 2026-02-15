@@ -50,11 +50,14 @@ interface DashboardState {
   atvDeviceIp: string | null;
   logs: LogEntry[];
   notesContent: string;
+  eventLogOpen: boolean;
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   setAtvDeviceIp: (ip: string | null) => void;
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setNotesContent: (content: string) => void;
+  setEventLogOpen: (open: boolean) => void;
+  toggleEventLog: () => void;
 }
 
 const initialApps = defaultApps.map(app => ({
@@ -81,6 +84,7 @@ export const useDashboardStore = create<DashboardState>()(
       atvDeviceIp: null,
       logs: [],
       notesContent: '',
+      eventLogOpen: false,
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
@@ -100,6 +104,8 @@ export const useDashboardStore = create<DashboardState>()(
         ].slice(0, 100) // Keep last 100 logs
       })),
       setNotesContent: (content) => set({ notesContent: content }),
+      setEventLogOpen: (open) => set({ eventLogOpen: open }),
+      toggleEventLog: () => set((state) => ({ eventLogOpen: !state.eventLogOpen })),
     }),
     {
       name: 'dashboard-storage',
