@@ -1,12 +1,12 @@
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
 const streams = []
 export const apps = [
-  { name: 'YouTube', icon: Youtube, href: '#', packageName: 'com.google.android.youtube.tv' },
-  { name: 'Twitch', icon: Twitch, href: '#', packageName: 'tv.twitch.android.app' },
-  { name: 'Plex', icon: Film, href: '#', packageName: 'com.plexapp.android' },
-  { name: 'Movies', icon: Clapperboard, href: '#', packageName: 'com.google.android.videos' },
-  { name: 'Games', icon: Gamepad2, href: '#', packageName: 'com.google.android.play.games' },
-  { name: 'Music', icon: Music, href: '#', packageName: 'com.spotify.tv.android' },
+  { name: 'YouTube', icon: Youtube, packageName: 'com.google.android.youtube.tv' },
+  { name: 'Twitch', icon: Twitch, packageName: 'tv.twitch.android.app' },
+  { name: 'Plex', icon: Film, packageName: 'com.plexapp.android' },
+  { name: 'Movies', icon: Clapperboard, packageName: 'com.google.android.videos' },
+  { name: 'Games', icon: Gamepad2, packageName: 'com.google.android.play.games' },
+  { name: 'Music', icon: Music, packageName: 'com.spotify.tv.android' },
 ];
 
 export const newsItems = [

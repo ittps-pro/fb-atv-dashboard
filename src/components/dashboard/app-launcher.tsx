@@ -1,12 +1,23 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { apps } from '@/lib/mock-data';
 import { Grid3x3 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useDashboardStore } from '@/store/use-dashboard-store';
+import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
+
+const iconMap = {
+  Youtube,
+  Twitch,
+  Film,
+  Clapperboard,
+  Gamepad2,
+  Music,
+};
 
 export function AppLauncher() {
   const { toast } = useToast();
+  const { apps } = useDashboardStore();
 
   const handleLaunch = async (appName: string, packageName: string | undefined) => {
     if (!packageName) {
@@ -62,18 +73,21 @@ export function AppLauncher() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-4 md:gap-6 text-center">
-          {apps.map((app) => (
-            <button
-              key={app.name}
-              onClick={() => handleLaunch(app.name, app.packageName)}
-              className="group flex flex-col items-center gap-2 p-2 rounded-lg transition-all duration-300 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <div className="p-4 bg-secondary rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/30">
-                <app.icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />
-              </div>
-              <span className="text-sm font-medium text-foreground truncate">{app.name}</span>
-            </button>
-          ))}
+          {apps.map((app) => {
+            const Icon = iconMap[app.iconName];
+            return (
+              <button
+                key={app.name}
+                onClick={() => handleLaunch(app.name, app.packageName)}
+                className="group flex flex-col items-center gap-2 p-2 rounded-lg transition-all duration-300 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <div className="p-4 bg-secondary rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/30">
+                  {Icon ? <Icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" /> : <Gamepad2 className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />}
+                </div>
+                <span className="text-sm font-medium text-foreground truncate">{app.name}</span>
+              </button>
+            )
+          })}
         </div>
       </CardContent>
     </Card>

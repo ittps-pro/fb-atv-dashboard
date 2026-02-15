@@ -7,10 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Video, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import * as z from 'zod'
 
 // Dynamically import webtorrent as it's a client-side library
 type WebTorrentInstance = import('webtorrent').Instance;
 type Torrent = import('webtorrent').Torrent;
+
+const magnetLink = z.string()
+
 
 interface VideoStreamWidgetProps {
   initialMagnetUri?: string;

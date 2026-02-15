@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { SettingsPanel } from './settings-panel';
 
 export function DashboardHeader() {
   const { toast } = useToast();
@@ -26,18 +27,21 @@ export function DashboardHeader() {
         <Zap className="h-8 w-8 text-accent" />
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Action Dashboard</h1>
       </div>
-       <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={handleVoiceControl} aria-label="Voice Control">
-              <Mic className="h-6 w-6" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Voice Control</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+       <div className="flex items-center gap-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleVoiceControl} aria-label="Voice Control">
+                <Mic className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Voice Control</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <SettingsPanel />
+       </div>
     </header>
   );
 }
