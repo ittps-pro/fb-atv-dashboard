@@ -30,6 +30,7 @@ const WidgetVisibilitySchema = z.object({
   weather: z.boolean(),
   sports: z.boolean(),
   remoteControl: z.boolean(),
+  notes: z.boolean(),
 });
 
 type WidgetVisibility = z.infer<typeof WidgetVisibilitySchema>;
@@ -48,10 +49,12 @@ interface DashboardState {
   widgets: WidgetVisibility;
   atvDeviceIp: string | null;
   logs: LogEntry[];
+  notesContent: string;
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   setAtvDeviceIp: (ip: string | null) => void;
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
+  setNotesContent: (content: string) => void;
 }
 
 const initialApps = defaultApps.map(app => ({
@@ -73,9 +76,11 @@ export const useDashboardStore = create<DashboardState>()(
         weather: true,
         sports: true,
         remoteControl: true,
+        notes: true,
       },
       atvDeviceIp: null,
       logs: [],
+      notesContent: '',
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
@@ -94,6 +99,7 @@ export const useDashboardStore = create<DashboardState>()(
             ...state.logs
         ].slice(0, 100) // Keep last 100 logs
       })),
+      setNotesContent: (content) => set({ notesContent: content }),
     }),
     {
       name: 'dashboard-storage',

@@ -7,6 +7,7 @@
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
+    pkgs.android-tools
   ];
   # Sets environment variables in the workspace
   env = {};
@@ -15,7 +16,7 @@
   services.firebase.emulators = {
     # Disabling because we are using prod backends right now
     detect = false;
-    projectId = "demo-app";
+    projectId = "tv-app";
     services = ["auth" "firestore"];
   };
   idx = {

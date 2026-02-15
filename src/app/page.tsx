@@ -19,6 +19,7 @@ import { RemoteControlWidget } from "@/components/dashboard/remote-control";
 import { Loader2 } from "lucide-react";
 import { Sidebar, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { EventLogSidebar } from "@/components/dashboard/event-log-sidebar";
+import { NotesWidget } from "@/components/dashboard/notes-widget";
 
 
 function RecommendationsSkeleton() {
@@ -113,6 +114,7 @@ export default function Home() {
               <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
                 {widgets.appLauncher && <AppLauncher />}
                 {widgets.fileManager && <FileManager />}
+                {widgets.notes && <NotesWidget />}
               </div>
               <div className="col-span-12 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
                 {widgets.videoStream && <VideoStreamWidget initialMagnetUri={videoStream.magnetUri} />}

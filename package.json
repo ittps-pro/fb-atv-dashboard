@@ -54,7 +54,8 @@
     "tailwindcss-animate": "^1.0.7",
     "webtorrent": "^2.3.4",
     "zod": "^3.24.2",
-    "zustand": "latest"
+    "zustand": "latest",
+    "adb-ts": "latest"
   },
   "devDependencies": {
     "@types/node": "^20",
