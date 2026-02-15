@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "rec-1",
+      "description": "Movie poster placeholder",
+      "imageUrl": "https://images.unsplash.com/photo-1611419010196-a360856fc42f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtb3ZpZSUyMHBvc3RlcnxlbnwwfHx8fDE3NzExMTc5NDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "movie poster"
+    },
+    {
+      "id": "rec-2",
+      "description": "TV show placeholder",
+      "imageUrl": "https://images.unsplash.com/photo-1596405367208-63505402f113?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx0diUyMHNob3d8ZW58MHx8fHwxNzcwOTk4MTYwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tv show"
+    },
+    {
+      "id": "rec-3",
+      "description": "Live channel placeholder",
+      "imageUrl": "https://images.unsplash.com/photo-1614036742146-6e9bb0a163d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxsaXZlJTIwYnJvYWRjYXN0fGVufDB8fHx8MTc3MTEyMDQzMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "live broadcast"
+    },
+    {
+      "id": "rec-4",
+      "description": "Movie poster placeholder 2",
+      "imageUrl": "https://images.unsplash.com/photo-1721488347808-0a6e1de16fe1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWN0aW9uJTIwbW92aWV8ZW58MHx8fHwxNzcxMDEwNjg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "action movie"
+    },
+    {
+      "id": "rec-5",
+      "description": "TV show placeholder 2",
+      "imageUrl": "https://images.unsplash.com/photo-1520498209451-5da208c6e280?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzY2ktZmklMjBzZXJpZXN8ZW58MHx8fHwxNzcxMDUwMjQzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sci-fi series"
+    }
+  ]
 }
