@@ -10,6 +10,8 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PersonalizedContentRecommendationsOutput } from "@/ai/flows/personalized-content-recommendations";
 import { FileManager } from "@/components/dashboard/file-manager";
+import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
+import { videoStream } from "@/lib/mock-data";
 
 function RecommendationsSkeleton() {
   return (
@@ -76,6 +78,7 @@ export default function Home() {
             <FileManager />
           </div>
           <div className="col-span-12 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+            <VideoStreamWidget initialMagnetUri={videoStream.magnetUri} />
             <div className="sm:col-span-2">
                 <NewsWidget />
             </div>

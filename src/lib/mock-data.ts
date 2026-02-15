@@ -1,5 +1,5 @@
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
-
+const streams = []
 export const apps = [
   { name: 'YouTube', icon: Youtube, href: '#', packageName: 'com.google.android.youtube.tv' },
   { name: 'Twitch', icon: Twitch, href: '#', packageName: 'tv.twitch.android.app' },
@@ -20,4 +20,9 @@ export const sportsScore = {
     teamB: { name: 'Warriors', score: 98 },
     league: 'NBA',
     status: 'Final'
+};
+
+export const videoStream = {
+  name: 'Big Buck Bunny',
+  magnetUri: 'magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969'
 };
