@@ -9,6 +9,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PersonalizedContentRecommendationsOutput } from "@/ai/flows/personalized-content-recommendations";
+import { FileManager } from "@/components/dashboard/file-manager";
 
 function RecommendationsSkeleton() {
   return (
@@ -70,8 +71,9 @@ export default function Home() {
         </Suspense>
 
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-4">
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
             <AppLauncher />
+            <FileManager />
           </div>
           <div className="col-span-12 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
             <div className="sm:col-span-2">

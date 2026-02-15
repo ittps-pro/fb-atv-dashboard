@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execPromise = promisify(exec);
+import { executeCommand } from '@/lib/adb';
 
 /**
  * NOTE: This API route requires the 'adb' (Android Debug Bridge) command-line tool
@@ -15,20 +12,6 @@ const execPromise = promisify(exec);
  * You may need to connect for the first time from your server's terminal with `adb connect <ip_address>`
  * to authorize the connection on the TV.
  */
-
-async function executeCommand(command: string) {
-    try {
-        console.log(`Executing: ${command}`);
-        const { stdout, stderr } = await execPromise(command);
-        if (stderr) {
-            console.warn(`Stderr for command "${command}":`, stderr);
-        }
-        return { stdout, stderr };
-    } catch (error: any) {
-        console.error(`Error executing command "${command}":`, error.message);
-        throw error;
-    }
-}
 
 
 export async function POST(request: Request) {
