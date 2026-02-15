@@ -18,3 +18,18 @@ export async function executeCommand(command: string) {
         throw error;
     }
 }
+
+export async function installTools() {
+    try {
+        console.log(`Install adb`);
+        
+        const { stdout, stderr } = await execPromise("");
+        if (stderr) {
+            console.warn(`Stderr for command "${command}":`, stderr);
+        }
+        return { stdout, stderr };
+    } catch (error: any) {
+        console.error(`Error executing command "${command}":`, error.message);
+        throw error;
+    }
+}

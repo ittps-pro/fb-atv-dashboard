@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Zap } from 'lucide-react';
+import { Mic, Zap, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -10,9 +10,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { SettingsPanel } from './settings-panel';
+import { useSidebar } from '../ui/sidebar';
 
 export function DashboardHeader() {
   const { toast } = useToast();
+  const { toggleSidebar } = useSidebar();
 
   const handleVoiceControl = () => {
     toast({
@@ -37,6 +39,18 @@ export function DashboardHeader() {
             </TooltipTrigger>
             <TooltipContent>
               <p>Voice Control</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Event Log">
+                <Activity className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Event Log</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

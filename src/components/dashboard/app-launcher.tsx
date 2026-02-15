@@ -17,28 +17,32 @@ const iconMap = {
 
 export function AppLauncher() {
   const { toast } = useToast();
-  const { apps } = useDashboardStore();
+  const { apps, atvDeviceIp, addLog } = useDashboardStore();
 
   const handleLaunch = async (appName: string, packageName: string | undefined) => {
+    if (!atvDeviceIp) {
+      const msg = "Android TV IP address not set.";
+      addLog({ message: `App launch failed: ${msg}`, type: 'error' });
+      toast({ title: 'Launch Failed', description: msg, variant: "destructive" });
+      return;
+    }
+    
     if (!packageName) {
-      toast({
-        title: `App Not Configured`,
-        description: `${appName} does not have an Android TV package name set.`,
-        variant: "destructive",
-      });
+      const msg = `${appName} does not have a package name configured.`;
+      addLog({ message: `App launch failed: ${msg}`, type: 'warning' });
+      toast({ title: 'App Not Configured', description: msg, variant: "destructive" });
       return;
     }
 
-    toast({
-      title: `Launching ${appName}...`,
-      description: `Sending command to ${packageName}.`,
-    });
+    const launchMsg = `Attempting to launch ${appName} (${packageName})...`;
+    addLog({ message: launchMsg, type: 'info' });
+    toast({ title: 'Launching App', description: launchMsg });
 
     try {
       const response = await fetch('/api/launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageName }),
+        body: JSON.stringify({ packageName, deviceIp: atvDeviceIp }),
       });
 
       const result = await response.json();
@@ -46,46 +50,39 @@ export function AppLauncher() {
       if (!response.ok) {
         throw new Error(result.error || 'Failed to launch app.');
       }
-
-      toast({
-        title: 'Command Sent',
-        description: result.message || `${appName} should be launching.`,
-        variant: 'default',
-      });
+      
+      addLog({ message: result.message, type: 'info' });
+      toast({ title: 'Command Sent', description: result.message, variant: 'default' });
 
     } catch (error: any) {
-      console.error("Launch failed:", error);
-      toast({
-        title: 'Launch Failed',
-        description: error.message || 'Could not send command to the device.',
-        variant: "destructive",
-      });
+      addLog({ message: `Launch failed: ${error.message}`, type: 'error' });
+      toast({ title: 'Launch Failed', description: error.message, variant: "destructive" });
     }
   };
   
   return (
     <Card className="bg-card/50 backdrop-blur-sm h-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div className="flex items-center gap-3">
           <Grid3x3 className="h-6 w-6 text-muted-foreground" />
           <CardTitle>App Launcher</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 md:gap-6 text-center">
+        <div className="grid grid-cols-3 gap-4">
           {apps.map((app) => {
             const Icon = iconMap[app.iconName];
             return (
-              <button
+              <Card 
                 key={app.name}
                 onClick={() => handleLaunch(app.name, app.packageName)}
-                className="group flex flex-col items-center gap-2 p-2 rounded-lg transition-all duration-300 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="group cursor-pointer bg-secondary/40 hover:bg-accent/20 transition-all duration-300 flex flex-col items-center justify-center p-4 aspect-square"
               >
-                <div className="p-4 bg-secondary rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/30">
-                  {Icon ? <Icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" /> : <Gamepad2 className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />}
-                </div>
-                <span className="text-sm font-medium text-foreground truncate">{app.name}</span>
-              </button>
+                  <div className="p-3 bg-secondary rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/30">
+                    {Icon ? <Icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" /> : <Gamepad2 className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />}
+                  </div>
+                  <p className="text-sm font-medium text-center mt-2 truncate">{app.name}</p>
+              </Card>
             )
           })}
         </div>

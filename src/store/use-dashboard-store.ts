@@ -34,11 +34,24 @@ const WidgetVisibilitySchema = z.object({
 
 type WidgetVisibility = z.infer<typeof WidgetVisibilitySchema>;
 
+const LogEntrySchema = z.object({
+    id: z.string(),
+    timestamp: z.string(),
+    message: z.string(),
+    type: z.enum(['info', 'warning', 'error']),
+});
+  
+export type LogEntry = z.infer<typeof LogEntrySchema>;
+
 interface DashboardState {
   apps: AppConfig[];
   widgets: WidgetVisibility;
+  atvDeviceIp: string | null;
+  logs: LogEntry[];
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
+  setAtvDeviceIp: (ip: string | null) => void;
+  addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
 }
 
 const initialApps = defaultApps.map(app => ({
@@ -61,12 +74,25 @@ export const useDashboardStore = create<DashboardState>()(
         sports: true,
         remoteControl: true,
       },
+      atvDeviceIp: null,
+      logs: [],
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
           ...state.widgets,
           [widget]: !state.widgets[widget],
         },
+      })),
+      setAtvDeviceIp: (ip) => set({ atvDeviceIp: ip }),
+      addLog: (log) => set((state) => ({
+        logs: [
+            { 
+                ...log, 
+                id: new Date().toISOString() + Math.random(), 
+                timestamp: new Date().toLocaleTimeString() 
+            }, 
+            ...state.logs
+        ].slice(0, 100) // Keep last 100 logs
       })),
     }),
     {

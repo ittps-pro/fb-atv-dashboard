@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { useDashboardStore } from '@/store/use-dashboard-store';
 
 
 type Status = 'idle' | 'uploading' | 'installing' | 'success' | 'error';
@@ -16,6 +17,7 @@ export function FileManager() {
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  const { atvDeviceIp, addLog } = useDashboardStore();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -36,6 +38,13 @@ export function FileManager() {
   };
 
   const handleInstall = async () => {
+    if (!atvDeviceIp) {
+      const msg = "Android TV IP address not set.";
+      addLog({ message: `Install failed: ${msg}`, type: 'error' });
+      toast({ title: 'Installation Failed', description: msg, variant: "destructive" });
+      return;
+    }
+    
     if (!file) {
       toast({
         title: "No File Selected",
@@ -47,14 +56,15 @@ export function FileManager() {
 
     setStatus('uploading');
     setProgress(0);
+    addLog({ message: `Starting upload of ${file.name}`, type: 'info' });
     
-    // Simulate upload progress
     const uploadInterval = setInterval(() => {
         setProgress(prev => (prev < 90 ? prev + 10 : prev));
     }, 200);
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('deviceIp', atvDeviceIp);
 
     try {
       const response = await fetch('/api/install', {
@@ -65,6 +75,7 @@ export function FileManager() {
       clearInterval(uploadInterval);
       setProgress(95);
       setStatus('installing');
+      addLog({ message: `File uploaded, starting installation on ${atvDeviceIp}`, type: 'info' });
 
       const result = await response.json();
 
@@ -74,6 +85,7 @@ export function FileManager() {
       
       setProgress(100);
       setStatus('success');
+      addLog({ message: result.message, type: 'info' });
       toast({
         title: 'Installation Successful',
         description: result.message,
@@ -83,6 +95,7 @@ export function FileManager() {
       clearInterval(uploadInterval);
       setStatus('error');
       setProgress(0);
+      addLog({ message: `Installation failed: ${error.message}`, type: 'error' });
       toast({
         title: 'Installation Failed',
         description: error.message,

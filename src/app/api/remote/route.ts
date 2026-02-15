@@ -2,18 +2,16 @@ import { NextResponse } from 'next/server';
 import { executeCommand } from '@/lib/adb';
 
 export async function POST(request: Request) {
-  const { keyCode } = await request.json();
+  const { keyCode, deviceIp } = await request.json();
 
   if (!keyCode) {
     return NextResponse.json({ error: 'Key code is required' }, { status: 400 });
   }
 
-  const deviceIp = process.env.ATV_DEVICE_IP;
   if (!deviceIp) {
-    console.error('ATV_DEVICE_IP environment variable not set.');
-    return NextResponse.json({ error: 'Android TV device IP is not configured on the server. Please set ATV_DEVICE_IP in .env file.' }, { status: 500 });
+    return NextResponse.json({ error: 'Android TV device IP is not configured.' }, { status: 400 });
   }
-
+  
   const deviceAddress = `${deviceIp}:5555`;
 
   try {

@@ -7,22 +7,18 @@ import { join } from 'path';
 /**
  * NOTE: This API route requires the 'adb' (Android Debug Bridge) command-line tool
  * to be installed and available in the server's PATH.
- * 
- * You also need to set the ATV_DEVICE_IP environment variable in your .env file
- * to the IP address of your Android TV device. e.g., ATV_DEVICE_IP=192.168.1.100
  */
 
 export async function POST(request: Request) {
-  const deviceIp = process.env.ATV_DEVICE_IP;
-  if (!deviceIp) {
-    console.error('ATV_DEVICE_IP environment variable not set.');
-    return NextResponse.json({ error: 'Android TV device IP is not configured on the server. Please set ATV_DEVICE_IP in .env file.' }, { status: 500 });
-  }
-
   let tempPath = '';
   try {
     const data = await request.formData();
     const file: File | null = data.get('file') as unknown as File;
+    const deviceIp = data.get('deviceIp') as string | null;
+
+    if (!deviceIp) {
+      return NextResponse.json({ error: 'Android TV device IP is not configured.' }, { status: 400 });
+    }
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });

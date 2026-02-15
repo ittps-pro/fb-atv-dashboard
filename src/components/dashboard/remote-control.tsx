@@ -5,16 +5,27 @@ import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Circle, Home, ArrowLeft, Power } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Gamepad } from "lucide-react";
+import { useDashboardStore } from "@/store/use-dashboard-store";
 
 export function RemoteControlWidget() {
     const { toast } = useToast();
+    const { atvDeviceIp, addLog } = useDashboardStore();
 
     const sendKeyEvent = async (keyCode: string) => {
+        if (!atvDeviceIp) {
+            const msg = "Android TV IP address not set.";
+            addLog({ message: `Remote control failed: ${msg}`, type: 'error' });
+            toast({ title: 'Remote Failed', description: msg, variant: "destructive" });
+            return;
+        }
+
+        addLog({ message: `Sending key code ${keyCode}`, type: 'info' });
+
         try {
             const response = await fetch('/api/remote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyCode }),
+                body: JSON.stringify({ keyCode, deviceIp: atvDeviceIp }),
             });
             
             const result = await response.json();
@@ -22,7 +33,7 @@ export function RemoteControlWidget() {
                 throw new Error(result.details || result.error || 'Failed to send key event.');
             }
         } catch (error: any) {
-            console.error("Remote control failed:", error);
+            addLog({ message: `Remote key press failed: ${error.message}`, type: 'error' });
             toast({
                 title: 'Remote Control Failed',
                 description: error.message,
