@@ -33,7 +33,7 @@ const WidgetVisibilitySchema = z.object({
   notes: z.boolean(),
 });
 
-type WidgetVisibility = z.infer<typeof WidgetVisibilitySchema>;
+export type WidgetVisibility = z.infer<typeof WidgetVisibilitySchema>;
 
 const LogEntrySchema = z.object({
     id: z.string(),
@@ -51,6 +51,7 @@ interface DashboardState {
   logs: LogEntry[];
   notesContent: string;
   eventLogOpen: boolean;
+  fullscreenLayout: (keyof WidgetVisibility)[];
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   setAtvDeviceIp: (ip: string | null) => void;
@@ -58,6 +59,7 @@ interface DashboardState {
   setNotesContent: (content: string) => void;
   setEventLogOpen: (open: boolean) => void;
   toggleEventLog: () => void;
+  setFullscreenLayout: (layout: (keyof WidgetVisibility)[]) => void;
 }
 
 const initialApps = defaultApps.map(app => ({
@@ -81,6 +83,17 @@ export const useDashboardStore = create<DashboardState>()(
         remoteControl: true,
         notes: true,
       },
+      fullscreenLayout: [
+        'recommendations',
+        'appLauncher',
+        'fileManager',
+        'notes',
+        'videoStream',
+        'news',
+        'weather',
+        'sports',
+        'remoteControl',
+      ],
       atvDeviceIp: null,
       logs: [],
       notesContent: '',
@@ -106,6 +119,7 @@ export const useDashboardStore = create<DashboardState>()(
       setNotesContent: (content) => set({ notesContent: content }),
       setEventLogOpen: (open) => set({ eventLogOpen: open }),
       toggleEventLog: () => set((state) => ({ eventLogOpen: !state.eventLogOpen })),
+      setFullscreenLayout: (layout) => set({ fullscreenLayout: layout }),
     }),
     {
       name: 'dashboard-storage',
