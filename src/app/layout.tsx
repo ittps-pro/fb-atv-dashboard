@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { EventLogController } from '@/components/dashboard/event-log-controller';
 import { NavigationSidebar } from '@/components/dashboard/navigation-sidebar';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'Action Dashboard',
@@ -23,14 +24,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <SidebarProvider>
-          <NavigationSidebar />
-          <div className="relative flex min-h-svh flex-1 flex-col bg-background">
-            {children}
-          </div>
-          <EventLogController />
-          <Toaster />
-        </SidebarProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <NavigationSidebar />
+            <div className="relative flex min-h-svh flex-1 flex-col bg-background">
+              {children}
+            </div>
+            <EventLogController />
+            <Toaster />
+          </SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

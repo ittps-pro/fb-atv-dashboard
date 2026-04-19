@@ -52,6 +52,7 @@ interface DashboardState {
   notesContent: string;
   eventLogOpen: boolean;
   fullscreenLayout: (keyof WidgetVisibility)[];
+  theme: string;
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   setAtvDeviceIp: (ip: string | null) => void;
@@ -60,6 +61,7 @@ interface DashboardState {
   setEventLogOpen: (open: boolean) => void;
   toggleEventLog: () => void;
   setFullscreenLayout: (layout: (keyof WidgetVisibility)[]) => void;
+  setTheme: (theme: string) => void;
 }
 
 const initialApps = defaultApps.map(app => ({
@@ -98,6 +100,7 @@ export const useDashboardStore = create<DashboardState>()(
       logs: [],
       notesContent: '',
       eventLogOpen: false,
+      theme: 'zinc',
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
@@ -120,6 +123,7 @@ export const useDashboardStore = create<DashboardState>()(
       setEventLogOpen: (open) => set({ eventLogOpen: open }),
       toggleEventLog: () => set((state) => ({ eventLogOpen: !state.eventLogOpen })),
       setFullscreenLayout: (layout) => set({ fullscreenLayout: layout }),
+      setTheme: (theme) => set({ theme }),
     }),
     {
       name: 'dashboard-storage',

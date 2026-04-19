@@ -10,6 +10,8 @@ import { Settings, Wifi } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { themes } from '@/lib/themes';
 
 export function SettingsPanel() {
   const { 
@@ -18,6 +20,8 @@ export function SettingsPanel() {
     atvDeviceIp,
     setAtvDeviceIp,
     addLog,
+    theme,
+    setTheme,
   } = useDashboardStore();
 
   const [ipAddress, setIpAddress] = useState(atvDeviceIp || '');
@@ -61,6 +65,27 @@ export function SettingsPanel() {
                   <Label htmlFor={widgetKey} className="capitalize">{widgetKey.replace(/([A-Z])/g, ' $1')}</Label>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <Separator />
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Theme</h3>
+            <div className="space-y-2">
+              <Label htmlFor="theme-select">Color Theme</Label>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger id="theme-select">
+                    <SelectValue placeholder="Select a theme" />
+                </SelectTrigger>
+                <SelectContent>
+                    {themes.map((themeOption) => (
+                        <SelectItem key={themeOption.name} value={themeOption.name}>
+                            {themeOption.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
