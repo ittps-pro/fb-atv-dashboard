@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music, Tv, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const iconMap: Record<AppConfig['iconName'], React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Youtube,
   Twitch,
   Film,
@@ -36,7 +36,7 @@ const StatusIndicator = ({ status }: { status: Status }) => {
 
 const AppStatusCard = ({ app }: { app: AppConfig }) => {
     const [status, setStatus] = useState<Status>('online');
-    const Icon = iconMap[app.iconName];
+    const Icon = iconMap[app.iconName] || Tv;
 
     useEffect(() => {
         // Simulate real-time status updates
