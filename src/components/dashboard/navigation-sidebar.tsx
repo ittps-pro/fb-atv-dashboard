@@ -10,15 +10,22 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Video, Pencil, LayoutTemplate, Tv } from "lucide-react";
+import { LayoutDashboard, Video, Pencil, LayoutTemplate, Tv, Terminal, AppWindow } from "lucide-react";
 
 export function NavigationSidebar() {
   const pathname = usePathname();
   
-  const menuItems = [
+  const mainMenuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/streams", label: "Streams", icon: Video },
+    { href: "/apps", label: "Apps", icon: AppWindow },
+  ];
+
+  const toolsMenuItems = [
+    { href: "/terminal", label: "SSH Terminal", icon: Terminal },
   ];
 
   const fullscreenMenuItems = [
@@ -32,35 +39,58 @@ export function NavigationSidebar() {
       <SidebarHeader></SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          <SidebarGroup>
+            {mainMenuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarGroup>
           <SidebarSeparator />
-          {fullscreenMenuItems.map((item) => (
-             <SidebarMenuItem key={item.href}>
-               <SidebarMenuButton
-                 asChild
-                 isActive={pathname === item.href}
-                 tooltip={item.label}
-               >
-                 <Link href={item.href}>
-                   <item.icon />
-                   <span>{item.label}</span>
-                 </Link>
-               </SidebarMenuButton>
-             </SidebarMenuItem>
-          ))}
+          <SidebarGroup>
+            <SidebarGroupLabel>Tools</SidebarGroupLabel>
+            {toolsMenuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarGroup>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupLabel>Fullscreen</SidebarGroupLabel>
+            {fullscreenMenuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarGroup>
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>

@@ -17,7 +17,9 @@ export function FileManager() {
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
-  const { atvDeviceIp, addLog } = useDashboardStore();
+  const { devices, activeDeviceId, addLog } = useDashboardStore();
+  const activeDevice = devices.find(d => d.id === activeDeviceId);
+  const atvDeviceIp = activeDevice?.ip;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -39,7 +41,7 @@ export function FileManager() {
 
   const handleInstall = async () => {
     if (!atvDeviceIp) {
-      const msg = "Android TV IP address not set.";
+      const msg = "No active Android TV device selected.";
       addLog({ message: `Install failed: ${msg}`, type: 'error' });
       toast({ title: 'Installation Failed', description: msg, variant: "destructive" });
       return;
@@ -75,7 +77,7 @@ export function FileManager() {
       clearInterval(uploadInterval);
       setProgress(95);
       setStatus('installing');
-      addLog({ message: `File uploaded, starting installation on ${atvDeviceIp}`, type: 'info' });
+      addLog({ message: `File uploaded, starting installation on ${activeDevice?.name}`, type: 'info' });
 
       const result = await response.json();
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { z } from 'zod';
@@ -44,10 +46,18 @@ const LogEntrySchema = z.object({
   
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
+const DeviceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  ip: z.string(),
+});
+export type Device = z.infer<typeof DeviceSchema>;
+
 interface DashboardState {
   apps: AppConfig[];
   widgets: WidgetVisibility;
-  atvDeviceIp: string | null;
+  devices: Device[];
+  activeDeviceId: string | null;
   logs: LogEntry[];
   notesContent: string;
   eventLogOpen: boolean;
@@ -55,7 +65,11 @@ interface DashboardState {
   theme: string;
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
-  setAtvDeviceIp: (ip: string | null) => void;
+  setDevices: (devices: Device[]) => void;
+  addDevice: (device: Pick<Device, 'name' | 'ip'>) => void;
+  updateDevice: (device: Device) => void;
+  removeDevice: (id: string) => void;
+  setActiveDeviceId: (id: string | null) => void;
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setNotesContent: (content: string) => void;
   setEventLogOpen: (open: boolean) => void;
@@ -72,7 +86,7 @@ const initialApps = defaultApps.map(app => ({
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       apps: initialApps,
       widgets: {
         recommendations: true,
@@ -96,11 +110,15 @@ export const useDashboardStore = create<DashboardState>()(
         'sports',
         'remoteControl',
       ],
-      atvDeviceIp: null,
+      devices: [
+        { id: '1', name: 'Living Room TV', ip: '192.168.1.101'},
+        { id: '2', name: 'Bedroom TV', ip: '192.168.1.102'},
+      ],
+      activeDeviceId: '1',
       logs: [],
       notesContent: '',
       eventLogOpen: false,
-      theme: 'zinc',
+      theme: 'orange',
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
@@ -108,7 +126,26 @@ export const useDashboardStore = create<DashboardState>()(
           [widget]: !state.widgets[widget],
         },
       })),
-      setAtvDeviceIp: (ip) => set({ atvDeviceIp: ip }),
+      setDevices: (devices) => set({ devices }),
+      addDevice: (device) => {
+        const newDevice = { ...device, id: new Date().toISOString() + Math.random() };
+        set((state) => ({ devices: [...state.devices, newDevice] }));
+        if (get().devices.length === 1) {
+            set({ activeDeviceId: newDevice.id });
+        }
+      },
+      updateDevice: (device) => set((state) => ({
+        devices: state.devices.map(d => d.id === device.id ? device : d)
+      })),
+      removeDevice: (id) => set((state) => {
+        const newDevices = state.devices.filter(d => d.id !== id);
+        let newActiveId = state.activeDeviceId;
+        if (state.activeDeviceId === id) {
+          newActiveId = newDevices.length > 0 ? newDevices[0].id : null;
+        }
+        return { devices: newDevices, activeDeviceId: newActiveId };
+      }),
+      setActiveDeviceId: (id) => set({ activeDeviceId: id }),
       addLog: (log) => set((state) => ({
         logs: [
             { 

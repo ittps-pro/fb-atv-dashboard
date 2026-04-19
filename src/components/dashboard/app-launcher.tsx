@@ -17,11 +17,13 @@ const iconMap = {
 
 export function AppLauncher() {
   const { toast } = useToast();
-  const { apps, atvDeviceIp, addLog } = useDashboardStore();
+  const { apps, devices, activeDeviceId, addLog } = useDashboardStore();
+  const activeDevice = devices.find(d => d.id === activeDeviceId);
+  const atvDeviceIp = activeDevice?.ip;
 
   const handleLaunch = async (appName: string, packageName: string | undefined) => {
     if (!atvDeviceIp) {
-      const msg = "Android TV IP address not set.";
+      const msg = "No active Android TV device selected.";
       addLog({ message: `App launch failed: ${msg}`, type: 'error' });
       toast({ title: 'Launch Failed', description: msg, variant: "destructive" });
       return;
@@ -34,7 +36,7 @@ export function AppLauncher() {
       return;
     }
 
-    const launchMsg = `Attempting to launch ${appName} (${packageName})...`;
+    const launchMsg = `Attempting to launch ${appName} on ${activeDevice?.name}...`;
     addLog({ message: launchMsg, type: 'info' });
     toast({ title: 'Launching App', description: launchMsg });
 

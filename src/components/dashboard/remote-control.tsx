@@ -9,17 +9,19 @@ import { useDashboardStore } from "@/store/use-dashboard-store";
 
 export function RemoteControlWidget() {
     const { toast } = useToast();
-    const { atvDeviceIp, addLog } = useDashboardStore();
+    const { devices, activeDeviceId, addLog } = useDashboardStore();
+    const activeDevice = devices.find(d => d.id === activeDeviceId);
+    const atvDeviceIp = activeDevice?.ip;
 
     const sendKeyEvent = async (keyCode: string) => {
         if (!atvDeviceIp) {
-            const msg = "Android TV IP address not set.";
+            const msg = "No active Android TV device selected.";
             addLog({ message: `Remote control failed: ${msg}`, type: 'error' });
             toast({ title: 'Remote Failed', description: msg, variant: "destructive" });
             return;
         }
 
-        addLog({ message: `Sending key code ${keyCode}`, type: 'info' });
+        addLog({ message: `Sending key code ${keyCode} to ${activeDevice?.name}`, type: 'info' });
 
         try {
             const response = await fetch('/api/remote', {
