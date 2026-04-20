@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,6 +21,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { iconMap, IconName } from '@/lib/lucide-icons';
+
 
 const formSchema = z.discriminatedUnion("type", [
     z.object({
@@ -48,15 +54,22 @@ interface ActionDialogProps {
 }
 
 export function ActionDialog({ open, onOpenChange, actionToEdit }: ActionDialogProps) {
-    const { addAction, updateAction, addLog, apps } = useDashboardStore();
+    const { addAction, updateAction, addLog, apps, fetchApps } = useDashboardStore();
     const { toast } = useToast();
     const isEditing = !!actionToEdit;
+    const [popoverOpen, setPopoverOpen] = useState(false);
 
     const form = useForm<ActionFormValues>({
         resolver: zodResolver(formSchema),
     });
     
     const watchedType = form.watch("type");
+
+    useEffect(() => {
+        if(open) {
+            fetchApps(); // Ensure we have the latest apps
+        }
+    }, [open, fetchApps]);
 
     useEffect(() => {
         if (open) {
@@ -85,20 +98,72 @@ export function ActionDialog({ open, onOpenChange, actionToEdit }: ActionDialogP
         switch (type) {
             case 'launch-app':
                 return (
-                    <FormField control={form.control} name="payload.packageName" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Application</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select an app to launch" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {apps.filter(app => !app.isHidden && app.packageName).map((app) => (
-                                        <SelectItem key={app.packageName} value={app.packageName!}>{app.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
+                    <FormField
+                      control={form.control}
+                      name="payload.packageName"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Application</FormLabel>
+                          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value
+                                    ? apps.find((app) => app.packageName === field.value)?.name
+                                    : "Select an app to launch"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                              <Command>
+                                <CommandInput placeholder="Search app..." />
+                                <CommandEmpty>No app found.</CommandEmpty>
+                                <CommandList>
+                                <CommandGroup>
+                                  {apps.filter(app => !app.isHidden && app.packageName).map((app) => {
+                                      const Icon = iconMap[app.iconName as IconName] || iconMap['AppWindow'];
+                                      return (
+                                        <CommandItem
+                                            value={app.name}
+                                            key={app.packageName}
+                                            onSelect={() => {
+                                                form.setValue("payload.packageName", app.packageName!);
+                                                setPopoverOpen(false);
+                                            }}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                "mr-2 h-4 w-4",
+                                                field.value === app.packageName ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <Icon className="h-5 w-5 text-muted-foreground" />
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{app.name}</span>
+                                                    <span className="text-xs text-muted-foreground">{app.packageName}</span>
+                                                </div>
+                                            </div>
+                                        </CommandItem>
+                                    )
+                                  })}
+                                </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
                         </FormItem>
-                    )} />
+                      )}
+                    />
                 );
             case 'shell-command':
                 return (
