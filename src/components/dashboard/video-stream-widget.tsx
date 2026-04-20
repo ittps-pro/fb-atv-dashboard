@@ -4,17 +4,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Video, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
-import * as z from 'zod'
 
 // Dynamically import webtorrent as it's a client-side library
 type WebTorrentInstance = import('webtorrent').Instance;
 type Torrent = import('webtorrent').Torrent;
-
-const magnetLink = z.string()
-
 
 interface VideoStreamWidgetProps {
   initialMagnetUri?: string;
@@ -24,6 +21,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
   const videoRef = useRef<HTMLDivElement>(null);
   const [client, setClient] = useState<WebTorrentInstance | null>(null);
   const [magnetUri, setMagnetUri] = useState(initialMagnetUri);
+  const [torrentFile, setTorrentFile] = useState<File | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPreparing, setIsPreparing] = useState(false);
   const [downloadSpeed, setDownloadSpeed] = useState(0);
@@ -49,6 +47,35 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
       };
     });
   }, []);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      if (files[0].name.endsWith('.torrent')) {
+        setTorrentFile(files[0]);
+        setMagnetUri(''); // Clear magnet URI if a file is selected
+        toast({ title: "File selected", description: files[0].name });
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a .torrent file.",
+          variant: "destructive",
+        });
+        setTorrentFile(null);
+        event.target.value = ''; // Clear the input
+      }
+    }
+  };
+
+  const handleMagnetChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      setMagnetUri(event.target.value);
+      if (event.target.value && torrentFile) {
+          setTorrentFile(null); // Clear file if magnet URI is being entered
+          // Also clear the file input visually
+          const fileInput = document.getElementById('torrent-file') as HTMLInputElement;
+          if (fileInput) fileInput.value = '';
+      }
+  }
   
   const stopStreaming = () => {
     if (client) {
@@ -65,10 +92,11 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
   }
 
   const startStreaming = () => {
-    if (!client || !magnetUri) {
+    const source = magnetUri || torrentFile;
+    if (!client || !source) {
       toast({
-        title: 'Invalid Magnet URI',
-        description: 'Please enter a valid magnet URI to start streaming.',
+        title: 'No source provided',
+        description: 'Please enter a magnet URI or select a .torrent file.',
         variant: 'destructive',
       });
       return;
@@ -82,7 +110,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
       description: 'Fetching torrent metadata...',
     });
 
-    client.add(magnetUri, (torrent: Torrent) => {
+    client.add(source, (torrent: Torrent) => {
       setIsPreparing(false);
       setIsStreaming(true);
       
@@ -131,6 +159,8 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
     }
     return `${speed.toFixed(2)} ${units[i]}`;
   };
+  
+  const isProcessing = isStreaming || isPreparing;
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm col-span-12">
@@ -140,23 +170,41 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
           <CardTitle>WebTorrent Streamer</CardTitle>
         </div>
         <CardDescription>
-            Stream videos directly from torrents. Enter a magnet URI below.
+            Stream videos directly from torrents. Enter a magnet URI or upload a .torrent file.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex space-x-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="space-y-2">
+            <Label htmlFor="magnet-uri">Magnet URI</Label>
             <Input 
+                id="magnet-uri"
                 placeholder="Enter magnet URI..."
                 value={magnetUri}
-                onChange={(e) => setMagnetUri(e.target.value)}
-                disabled={isStreaming || isPreparing}
+                onChange={handleMagnetChange}
+                disabled={isProcessing || !!torrentFile}
             />
-            {isStreaming || isPreparing ? (
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="torrent-file">Or Upload .torrent file</Label>
+            <Input 
+                id="torrent-file"
+                type="file" 
+                accept=".torrent" 
+                onChange={handleFileChange} 
+                disabled={isProcessing || !!magnetUri} 
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+            {isProcessing ? (
               <Button onClick={stopStreaming} variant="destructive">
-                Stop
+                Stop Stream
               </Button>
             ) : (
-              <Button onClick={startStreaming} disabled={!magnetUri}>
+              <Button onClick={startStreaming} disabled={!magnetUri && !torrentFile}>
+                {isPreparing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
                 Stream
               </Button>
             )}
@@ -168,7 +216,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
           </div>
         )}
 
-        <div ref={videoRef} className="aspect-video bg-black rounded-lg">
+        <div ref={videoRef} className="bg-black rounded-lg [&>video]:w-full [&>video]:rounded-lg [&>video]:max-h-[500px] [&>video]:aspect-video">
             {/* The video will be appended here by WebTorrent */}
         </div>
 
