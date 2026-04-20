@@ -75,5 +75,10 @@
     "packageName": "com.google.android.inputmethod.latin",
     "group": "System",
     "isHidden": true
+  },
+  {
+    "name": "kodi",
+    "iconName": "Tv",
+    "packageName": "org.xbmc.kodi"
   }
 ]

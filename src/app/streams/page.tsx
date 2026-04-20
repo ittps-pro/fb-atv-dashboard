@@ -1,60 +1,65 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDashboardStore } from "@/store/use-dashboard-store";
 import { DashboardHeader } from "@/components/dashboard/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PlayCircle, Plus, Pencil, Trash2, Network, Tv } from "lucide-react";
-import { VideoPlayer } from "@/components/dashboard/video-player";
-import { Separator } from "@/components/ui/separator";
+import { Plus, Loader2, RefreshCw } from "lucide-react";
 import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StreamDialog } from "@/components/dashboard/stream-dialog";
 import type { Stream } from "@/types/streams";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { StreamCard } from "@/components/dashboard/stream-card";
 
 
 export default function StreamsPage() {
-    const { streams, torrentStream, removeStream, addLog, tunnels, triggerAction, playStreamOnDevice } = useDashboardStore();
+    const { streams, torrentStream, fetchStreams, setStreams, checkAllStreamStatuses } = useDashboardStore();
     const { toast } = useToast();
     
-    const [selectedStream, setSelectedStream] = useState(streams.length > 0 ? streams[0] : { id: 'placeholder', name: 'No Stream Selected', url: '', category: ''});
-    const [customUrl, setCustomUrl] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [streamToEdit, setStreamToEdit] = useState<Stream | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Group streams by category
-    const streamGroups = streams.reduce((acc, stream) => {
-        (acc[stream.category] = acc[stream.category] || []).push(stream);
-        return acc;
-    }, {} as Record<string, typeof streams>);
-
-
-    const handlePlayCustomUrl = () => {
-        if (customUrl.trim()) {
-            setSelectedStream({
-                id: 'custom-url',
-                name: 'Custom Stream',
-                url: customUrl,
-                category: 'Custom'
-            });
+    useEffect(() => {
+        const loadStreams = async () => {
+            setIsLoading(true);
+            await fetchStreams();
+            setIsLoading(false);
+        }
+        loadStreams();
+    }, [fetchStreams]);
+    
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+          coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+    
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+          const oldIndex = streams.findIndex(s => s.id === active.id);
+          const newIndex = streams.findIndex(s => s.id === over.id);
+          setStreams(arrayMove(streams, oldIndex, newIndex));
         }
     };
-    
+
     const handleAddStream = () => {
         setStreamToEdit(null);
         setIsDialogOpen(true);
@@ -64,150 +69,62 @@ export default function StreamsPage() {
         setStreamToEdit(stream);
         setIsDialogOpen(true);
     };
-
-    const handleDeleteStream = (stream: Stream) => {
-        removeStream(stream.id);
-        toast({ title: "Stream Removed", description: `${stream.name} has been deleted.` });
-        addLog({ message: `Stream removed: ${stream.name}`, type: 'info' });
-        if (selectedStream.id === stream.id) {
-            const newStreams = streams.filter(s => s.id !== stream.id);
-            setSelectedStream(newStreams.length > 0 ? newStreams[0] : { id: 'placeholder', name: 'No Stream Selected', url: '', category: ''});
-        }
-    };
-
-    const handleSelectStream = async (stream: Stream) => {
-        if (stream.tunnelId) {
-            const tunnel = tunnels.find(t => t.id === stream.tunnelId);
-            if (tunnel && tunnel.status !== 'connected') {
-                toast({
-                    title: 'Tunnel Required',
-                    description: `This stream requires the "${tunnel.name}" tunnel. Please connect to it first from the Tunnels page.`,
-                    variant: 'destructive',
-                });
-                return; // Don't select the stream
-            }
-        }
-        setSelectedStream(stream);
-    };
-
-    const handlePlayOnDevice = async (stream: Stream) => {
-        if (stream.actionId) {
-            addLog({ message: `Executing bound action for stream: ${stream.name}`, type: 'info' });
-            try {
-                const result = await triggerAction(stream.actionId, { streamUrl: stream.url });
-                toast({ title: "Action Triggered", description: result.message });
-                addLog({ message: `Action "${stream.name}" executed.`, type: 'info' });
-            } catch (error: any) {
-                toast({ title: 'Action Failed', description: error.message, variant: 'destructive' });
-                addLog({ message: `Failed to execute action for ${stream.name}: ${error.message}`, type: 'error' });
-            }
-        } else {
-            addLog({ message: `Playing stream on device: ${stream.name}`, type: 'info' });
-            try {
-                const result = await playStreamOnDevice(stream.url);
-                toast({ title: 'Sent to Device', description: result.message });
-                addLog({ message: `Sent stream "${stream.name}" to device.`, type: 'info' });
-            } catch (error: any) {
-                toast({ title: 'Failed to Play', description: error.message, variant: 'destructive' });
-                addLog({ message: `Failed to play stream ${stream.name} on device: ${error.message}`, type: 'error' });
-            }
-        }
-    };
-
+    
+    const handleCheckStatuses = async () => {
+        toast({ title: "Checking stream statuses..." });
+        await checkAllStreamStatuses();
+        toast({ title: "Status check complete." });
+    }
 
     return (
         <>
           <div className="absolute inset-0 h-full w-full bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-10 dark:bg-[radial-gradient(hsl(var(--accent))_0.5px,transparent_0.5px)]"></div>
-          <main className="relative z-10 p-4 md:p-6 space-y-8">
+          <main className="relative z-10 p-4 md:p-6 space-y-8 h-screen flex flex-col">
             <DashboardHeader />
 
-            <Tabs defaultValue="direct">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="direct">Direct & Live Streams</TabsTrigger>
-                    <TabsTrigger value="torrent">Torrent Stream</TabsTrigger>
-                </TabsList>
-                <TabsContent value="direct" className="mt-6">
-                    <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-12 lg:col-span-8">
-                            <VideoPlayer src={selectedStream.url} title={selectedStream.name} />
-                        </div>
-                        <div className="col-span-12 lg:col-span-4">
-                            <Card className="bg-card/50 backdrop-blur-sm h-full max-h-[calc(100vh-12rem)] flex flex-col">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Available Streams</CardTitle>
-                                    <Button size="sm" variant="ghost" onClick={handleAddStream}>
-                                        <Plus className="mr-2 h-4 w-4" /> Add
-                                    </Button>
-                                </CardHeader>
-                                <CardContent className="flex-grow overflow-hidden flex flex-col gap-4">
-                                     <div className="px-2 space-y-2 shrink-0">
-                                        <h3 className="text-lg font-semibold">Play from URL</h3>
-                                        <div className="flex gap-2">
-                                            <Input 
-                                                placeholder="Enter stream URL (.mp4, .m3u8)"
-                                                value={customUrl}
-                                                onChange={(e) => setCustomUrl(e.target.value)}
-                                            />
-                                            <Button onClick={handlePlayCustomUrl}>Play</Button>
-                                        </div>
-                                     </div>
-                                     <Separator className="shrink-0" />
-                                     <ScrollArea className="pr-4">
-                                        <div className="flex flex-col gap-2">
-                                            {Object.entries(streamGroups).map(([category, streamsInCategory], index) => (
-                                                <div key={category}>
-                                                    <h3 className="text-lg font-semibold mb-2 px-2">{category}</h3>
-                                                    {streamsInCategory.map((stream) => {
-                                                        const tunnel = stream.tunnelId ? tunnels.find(t => t.id === stream.tunnelId) : null;
-                                                        return (
-                                                            <div key={stream.id} className="flex items-center justify-between group rounded-md hover:bg-accent/50">
-                                                                <Button
-                                                                    variant={selectedStream.id === stream.id ? "secondary" : "ghost"}
-                                                                    onClick={() => handleSelectStream(stream)}
-                                                                    className="justify-start gap-2 flex-grow bg-transparent hover:bg-transparent h-auto py-2"
-                                                                >
-                                                                    <PlayCircle className="h-5 w-5 text-muted-foreground" />
-                                                                    <div className="flex flex-col items-start text-left">
-                                                                        <span>{stream.name}</span>
-                                                                        {tunnel && (
-                                                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                                <Network className="h-3 w-3" />
-                                                                                {tunnel.name}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </Button>
-                                                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Play on Device" onClick={() => handlePlayOnDevice(stream)}><Tv className="h-4 w-4" /></Button>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditStream(stream)}><Pencil className="h-4 w-4" /></Button>
-                                                                    <AlertDialog>
-                                                                        <AlertDialogTrigger asChild>
-                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                                        </AlertDialogTrigger>
-                                                                        <AlertDialogContent>
-                                                                            <AlertDialogHeader>
-                                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                                <AlertDialogDescription>This will permanently delete the stream "{stream.name}".</AlertDialogDescription>
-                                                                            </AlertDialogHeader>
-                                                                            <AlertDialogFooter>
-                                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                                <AlertDialogAction onClick={() => handleDeleteStream(stream)}>Delete</AlertDialogAction>
-                                                                            </AlertDialogFooter>
-                                                                        </AlertDialogContent>
-                                                                    </AlertDialog>
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                    {index < Object.keys(streamGroups).length - 1 && <Separator className="my-4" />}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
-                        </div>
+            <Tabs defaultValue="direct" className="flex-grow flex flex-col">
+                <div className="flex justify-between items-center">
+                    <TabsList className="grid w-full max-w-md grid-cols-2">
+                        <TabsTrigger value="direct">Direct & Live Streams</TabsTrigger>
+                        <TabsTrigger value="torrent">Torrent Stream</TabsTrigger>
+                    </TabsList>
+                    <div className="flex items-center gap-2">
+                         <Button variant="outline" onClick={handleCheckStatuses}>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Check Statuses
+                        </Button>
+                        <Button onClick={handleAddStream}>
+                            <Plus className="mr-2 h-4 w-4" /> Add Stream
+                        </Button>
                     </div>
+                </div>
+                <TabsContent value="direct" className="mt-6 flex-grow">
+                    {isLoading ? (
+                         <div className="flex flex-col items-center justify-center text-center py-16 flex-grow">
+                            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : streams.length > 0 ? (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext items={streams} strategy={rectSortingStrategy}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {streams.map((stream) => (
+                                        <StreamCard key={stream.id} stream={stream} onEdit={handleEditStream} />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    ) : (
+                         <div className="flex flex-col items-center justify-center text-center py-16 flex-grow">
+                            <h2 className="text-2xl font-semibold">No Streams Configured</h2>
+                            <p className="mt-2 text-muted-foreground">Get started by adding a new video stream.</p>
+                            <Button onClick={handleAddStream} className="mt-6">
+                                <Plus className="mr-2 h-4 w-4" /> Add Stream
+                            </Button>
+                        </div>
+                    )}
                 </TabsContent>
                 <TabsContent value="torrent" className="mt-6">
                     <VideoStreamWidget initialMagnetUri={torrentStream.magnetUri} />

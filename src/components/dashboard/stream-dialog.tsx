@@ -50,13 +50,13 @@ export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogP
         }
     }, [open, streamToEdit, form, fetchActions]);
 
-    const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const onSubmit = async (data: z.infer<typeof formSchema>) => {
         if (isEditing && streamToEdit) {
-            updateStream({ id: streamToEdit.id, ...data });
+            await updateStream({ id: streamToEdit.id, ...data });
             toast({ title: 'Stream Updated', description: `${data.name} has been updated.` });
             addLog({ message: `Stream updated: ${data.name}`, type: 'info' });
         } else {
-            addStream(data);
+            await addStream(data);
             toast({ title: 'Stream Added', description: `${data.name} has been added.` });
             addLog({ message: `Stream added: ${data.name}`, type: 'info' });
         }

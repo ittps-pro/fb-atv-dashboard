@@ -4,7 +4,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { type AppConfig } from '@/types/apps';
-import { allStreams, videoStream as defaultTorrentStream } from '@/lib/mock-data';
+import { videoStream as defaultTorrentStream } from '@/lib/mock-data';
 import { type Tunnel } from '@/types/tunnels';
 import { type Device } from '@/types/devices';
 import { type Stream } from '@/types/streams';
@@ -64,10 +64,13 @@ interface DashboardState {
   updateAction: (action: DashboardAction) => Promise<void>;
   removeAction: (id: string) => Promise<void>;
   triggerAction: (id: string, context?: { streamUrl?: string }) => Promise<{success: boolean, message: string, stdout?: string, stderr?: string}>;
-
-  addStream: (stream: Omit<Stream, 'id'>) => void;
-  updateStream: (stream: Stream) => void;
-  removeStream: (id: string) => void;
+  
+  fetchStreams: () => Promise<void>;
+  setStreams: (streams: Stream[]) => Promise<void>;
+  checkAllStreamStatuses: () => Promise<void>;
+  addStream: (stream: Omit<Stream, 'id'>) => Promise<void>;
+  updateStream: (stream: Stream) => Promise<void>;
+  removeStream: (id: string) => Promise<void>;
   playStreamOnDevice: (streamUrl: string) => Promise<{success: boolean, message: string}>;
 
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
@@ -122,7 +125,7 @@ export const useDashboardStore = create<DashboardState>()(
       tunnels: [],
       storages: [],
       actions: [],
-      streams: allStreams,
+      streams: [],
       torrentStream: defaultTorrentStream,
       activeDeviceId: null,
       deviceStatuses: {},
@@ -409,15 +412,62 @@ export const useDashboardStore = create<DashboardState>()(
         return result;
       },
 
-      addStream: (stream) => set((state) => ({
-        streams: [...state.streams, { ...stream, id: new Date().toISOString() + Math.random() }]
-      })),
-      updateStream: (stream) => set((state) => ({
-        streams: state.streams.map(s => s.id === stream.id ? stream : s)
-      })),
-      removeStream: (id) => set((state) => ({
-        streams: state.streams.filter(s => s.id !== id)
-      })),
+      fetchStreams: async () => {
+        try {
+          const response = await fetch('/api/streams');
+          if (response.ok) {
+            const streams = await response.json();
+            set({ streams });
+            get().checkAllStreamStatuses();
+          }
+        } catch (error) {
+          console.error("Failed to fetch streams:", error);
+        }
+      },
+      setStreams: async (streams) => {
+        set({streams});
+        await fetch('/api/streams', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(streams),
+        });
+      },
+      checkAllStreamStatuses: async () => {
+          get().streams.forEach(async (stream) => {
+              set(state => ({ streamStatuses: { ...state.streamStatuses, [stream.id]: 'loading' } }));
+              try {
+                const response = await fetch('/api/streams/health', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: stream.url }),
+                });
+                const result = await response.json();
+                 set(state => ({ streamStatuses: { ...state.streamStatuses, [stream.id]: result.status } }));
+              } catch(e) {
+                 set(state => ({ streamStatuses: { ...state.streamStatuses, [stream.id]: 'offline' } }));
+              }
+          });
+      },
+      addStream: async (stream) => {
+        await fetch('/api/streams', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stream),
+        });
+        await get().fetchStreams();
+      },
+      updateStream: async (stream) => {
+        await fetch(`/api/streams/${stream.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stream),
+        });
+        await get().fetchStreams();
+      },
+      removeStream: async (id) => {
+        await fetch(`/api/streams/${id}`, { method: 'DELETE' });
+        await get().fetchStreams();
+      },
       playStreamOnDevice: async (streamUrl: string) => {
         const { activeDeviceId } = get();
         if (!activeDeviceId) {
