@@ -10,6 +10,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Info, Copy, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Device } from '@/types/devices';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 function CodeBlock({ command }: { command: string }) {
     const { toast } = useToast();
@@ -31,16 +33,27 @@ function CodeBlock({ command }: { command: string }) {
 }
 
 
-function ScrcpyInstructions({ device }: { device: Device }) {
+function ScrcpyInstructions({ device, isRecording }: { device: Device, isRecording: boolean }) {
     const { tunnels } = useDashboardStore();
     const localAdbPort = 15555; // Use a high port to avoid conflicts
+    const fileName = `record-${Date.now()}.mp4`;
+    const recordFlag = isRecording ? ` --record ${fileName}` : '';
 
     if (device.connectionType === 'direct') {
         const adbConnectCmd = `adb connect ${device.ip}:${device.port || 5555}`;
-        const scrcpyCmd = `scrcpy -s ${device.ip}:${device.port || 5555}`;
+        const scrcpyCmd = `scrcpy -s ${device.ip}:${device.port || 5555}${recordFlag}`;
         return (
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Direct Connection Instructions</h3>
+                 {isRecording && (
+                    <Alert variant="default">
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Recording Enabled</AlertTitle>
+                        <AlertDescription>
+                            A recording will be saved as <code className="bg-secondary p-1 rounded-md">{fileName}</code> in the directory where you run the command.
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <div className="space-y-2">
                     <p>1. Connect your computer to the same local network as your device.</p>
                     <p>2. Open a terminal and connect to your device with ADB:</p>
@@ -64,11 +77,20 @@ function ScrcpyInstructions({ device }: { device: Device }) {
         if (tunnel.protocol === 'ssh') {
              const sshPortForwardCmd = `ssh -L ${localAdbPort}:${device.ip}:${device.port || 5555} ${tunnel.config.username}@${tunnel.config.host} -p ${tunnel.config.port || 22} -N`;
              const adbConnectLocalCmd = `adb connect localhost:${localAdbPort}`;
-             const scrcpyLocalCmd = `scrcpy -s localhost:${localAdbPort}`;
+             const scrcpyLocalCmd = `scrcpy -s localhost:${localAdbPort}${recordFlag}`;
 
             return (
                 <div className="space-y-4">
                     <h3 className="font-semibold text-lg">Tunneled (SSH) Connection Instructions</h3>
+                    {isRecording && (
+                        <Alert variant="default">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Recording Enabled</AlertTitle>
+                            <AlertDescription>
+                                A recording will be saved as <code className="bg-secondary p-1 rounded-md">{fileName}</code> in the directory where you run the command.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                      <p className="text-sm text-muted-foreground">This method requires running commands on your local computer to create a secure tunnel and then connect scrcpy through it.</p>
                     <div className="space-y-2">
                         <p>1. Ensure the <span className="font-semibold text-primary">{tunnel.name}</span> tunnel is active and accessible.</p>
@@ -100,10 +122,19 @@ function ScrcpyInstructions({ device }: { device: Device }) {
     
     if (device.connectionType === 'reverse-tunnel') {
         const adbConnectCmd = `adb connect ${device.ip}:${device.port || 5555}`;
-        const scrcpyCmd = `scrcpy -s ${device.ip}:${device.port || 5555}`;
+        const scrcpyCmd = `scrcpy -s ${device.ip}:${device.port || 5555}${recordFlag}`;
          return (
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Reverse Tunnel Connection</h3>
+                 {isRecording && (
+                    <Alert variant="default">
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Recording Enabled</AlertTitle>
+                        <AlertDescription>
+                            A recording will be saved as <code className="bg-secondary p-1 rounded-md">{fileName}</code> in the directory where you run the command on the server.
+                        </AlertDescription>
+                    </Alert>
+                )}
                  <p className="text-sm text-muted-foreground">For this method, the device initiates the connection to the dashboard server.</p>
                 <div className="space-y-2">
                     <p>1. Follow the reverse tunnel setup instructions on the device settings page to establish the connection.</p>
@@ -128,6 +159,7 @@ function ScrcpyInstructions({ device }: { device: Device }) {
 export default function ScreenMirrorPage() {
     const { devices, activeDeviceId, setActiveDeviceId } = useDashboardStore();
     const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(activeDeviceId ?? undefined);
+    const [isRecording, setIsRecording] = useState(false);
 
     const selectedDevice = devices.find(d => d.id === selectedDeviceId);
     
@@ -174,9 +206,14 @@ export default function ScreenMirrorPage() {
                             </Select>
                         </div>
                         
+                        <div className="flex items-center space-x-2 pt-4">
+                            <Switch id="record-switch" checked={isRecording} onCheckedChange={setIsRecording} />
+                            <Label htmlFor="record-switch">Record Screen to a file</Label>
+                        </div>
+
                         {selectedDevice ? (
                              <div className="p-4 border rounded-lg">
-                                <ScrcpyInstructions device={selectedDevice} />
+                                <ScrcpyInstructions device={selectedDevice} isRecording={isRecording} />
                             </div>
                         ) : (
                              <div className="p-8 flex flex-col items-center justify-center text-center border-2 border-dashed rounded-lg">
