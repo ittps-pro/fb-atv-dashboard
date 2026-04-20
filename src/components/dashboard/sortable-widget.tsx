@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import type { WidgetVisibility } from '@/store/use-dashboard-store';
+import { cn } from '@/lib/utils';
 
 // Import all possible widget components
 import { AppLauncher } from './app-launcher';
