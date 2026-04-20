@@ -19,6 +19,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = StreamSchema.omit({ id: true });
 
@@ -29,13 +30,13 @@ interface StreamDialogProps {
 }
 
 export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogProps) {
-    const { addStream, updateStream, addLog } = useDashboardStore();
+    const { addStream, updateStream, addLog, tunnels } = useDashboardStore();
     const { toast } = useToast();
     const isEditing = !!streamToEdit;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: { name: "", url: "", category: "VOD" },
+        defaultValues: { name: "", url: "", category: "VOD", tunnelId: undefined },
     });
 
     useEffect(() => {
@@ -43,7 +44,7 @@ export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogP
             if (streamToEdit) {
                 form.reset(streamToEdit);
             } else {
-                form.reset({ name: "", url: "", category: "VOD" });
+                form.reset({ name: "", url: "", category: "VOD", tunnelId: undefined });
             }
         }
     }, [open, streamToEdit, form]);
@@ -81,6 +82,31 @@ export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogP
                          <FormField control={form.control} name="category" render={({ field }) => (
                             <FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Live TV, VOD" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
+                        <FormField
+                          control={form.control}
+                          name="tunnelId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Route via Tunnel (Optional)</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="None (Direct Connection)" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">None (Direct Connection)</SelectItem>
+                                  {tunnels.map((tunnel) => (
+                                    <SelectItem key={tunnel.id} value={tunnel.id}>
+                                      {tunnel.name} ({tunnel.protocol})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>

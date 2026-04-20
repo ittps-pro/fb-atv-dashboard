@@ -1,11 +1,5 @@
 [
   {
-    "id": "1",
-    "name": "Living Room TV",
-    "ip": "192.168.1.101",
-    "connectionType": "direct"
-  },
-  {
     "id": "2",
     "name": "Bedroom TV",
     "ip": "192.168.1.102",

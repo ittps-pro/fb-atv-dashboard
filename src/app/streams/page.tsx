@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlayCircle, Plus, Pencil, Trash2 } from "lucide-react";
+import { PlayCircle, Plus, Pencil, Trash2, Network } from "lucide-react";
 import { VideoPlayer } from "@/components/dashboard/video-player";
 import { Separator } from "@/components/ui/separator";
 import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export default function StreamsPage() {
-    const { streams, torrentStream, removeStream, addLog } = useDashboardStore();
+    const { streams, torrentStream, removeStream, addLog, tunnels } = useDashboardStore();
     const { toast } = useToast();
     
     const [selectedStream, setSelectedStream] = useState(streams.length > 0 ? streams[0] : { id: 'placeholder', name: 'No Stream Selected', url: '', category: ''});
@@ -75,6 +75,22 @@ export default function StreamsPage() {
         }
     };
 
+    const handleSelectStream = async (stream: Stream) => {
+        if (stream.tunnelId) {
+            const tunnel = tunnels.find(t => t.id === stream.tunnelId);
+            if (tunnel && tunnel.status !== 'connected') {
+                toast({
+                    title: 'Tunnel Required',
+                    description: `This stream requires the "${tunnel.name}" tunnel. Please connect to it first from the Tunnels page.`,
+                    variant: 'destructive',
+                });
+                return; // Don't select the stream
+            }
+        }
+        setSelectedStream(stream);
+    };
+
+
     return (
         <>
           <div className="absolute inset-0 h-full w-full bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-10 dark:bg-[radial-gradient(hsl(var(--accent))_0.5px,transparent_0.5px)]"></div>
@@ -117,36 +133,47 @@ export default function StreamsPage() {
                                             {Object.entries(streamGroups).map(([category, streamsInCategory], index) => (
                                                 <div key={category}>
                                                     <h3 className="text-lg font-semibold mb-2 px-2">{category}</h3>
-                                                    {streamsInCategory.map((stream) => (
-                                                        <div key={stream.id} className="flex items-center justify-between group rounded-md hover:bg-accent/50">
-                                                            <Button
-                                                                variant={selectedStream.id === stream.id ? "secondary" : "ghost"}
-                                                                onClick={() => setSelectedStream(stream)}
-                                                                className="justify-start gap-2 flex-grow bg-transparent hover:bg-transparent"
-                                                            >
-                                                                <PlayCircle className="h-5 w-5 text-muted-foreground" />
-                                                                <span>{stream.name}</span>
-                                                            </Button>
-                                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditStream(stream)}><Pencil className="h-4 w-4" /></Button>
-                                                                <AlertDialog>
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                                    </AlertDialogTrigger>
-                                                                    <AlertDialogContent>
-                                                                        <AlertDialogHeader>
-                                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                            <AlertDialogDescription>This will permanently delete the stream "{stream.name}".</AlertDialogDescription>
-                                                                        </AlertDialogHeader>
-                                                                        <AlertDialogFooter>
-                                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                            <AlertDialogAction onClick={() => handleDeleteStream(stream)}>Delete</AlertDialogAction>
-                                                                        </AlertDialogFooter>
-                                                                    </AlertDialogContent>
-                                                                </AlertDialog>
+                                                    {streamsInCategory.map((stream) => {
+                                                        const tunnel = stream.tunnelId ? tunnels.find(t => t.id === stream.tunnelId) : null;
+                                                        return (
+                                                            <div key={stream.id} className="flex items-center justify-between group rounded-md hover:bg-accent/50">
+                                                                <Button
+                                                                    variant={selectedStream.id === stream.id ? "secondary" : "ghost"}
+                                                                    onClick={() => handleSelectStream(stream)}
+                                                                    className="justify-start gap-2 flex-grow bg-transparent hover:bg-transparent h-auto py-2"
+                                                                >
+                                                                    <PlayCircle className="h-5 w-5 text-muted-foreground" />
+                                                                    <div className="flex flex-col items-start text-left">
+                                                                        <span>{stream.name}</span>
+                                                                        {tunnel && (
+                                                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                                <Network className="h-3 w-3" />
+                                                                                {tunnel.name}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </Button>
+                                                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditStream(stream)}><Pencil className="h-4 w-4" /></Button>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                                <AlertDialogDescription>This will permanently delete the stream "{stream.name}".</AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction onClick={() => handleDeleteStream(stream)}>Delete</AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        )
+                                                    })}
                                                     {index < Object.keys(streamGroups).length - 1 && <Separator className="my-4" />}
                                                 </div>
                                             ))}
