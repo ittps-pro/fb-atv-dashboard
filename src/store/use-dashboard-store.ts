@@ -8,6 +8,7 @@ import { apps as defaultApps, allStreams, videoStream as defaultTorrentStream } 
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
 import { type Tunnel } from '@/types/tunnels';
 import { type Device } from '@/types/devices';
+import { type Stream } from '@/types/streams';
 
 
 const iconMap = {
@@ -50,14 +51,6 @@ const LogEntrySchema = z.object({
   
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
-const StreamSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    url: z.string(),
-    category: z.string(),
-});
-type Stream = z.infer<typeof StreamSchema>;
-
 interface DashboardState {
   apps: AppConfig[];
   widgets: WidgetVisibility;
@@ -87,6 +80,11 @@ interface DashboardState {
   removeTunnel: (id: string) => Promise<void>;
   connectTunnel: (id: string) => Promise<void>;
   disconnectTunnel: (id: string) => Promise<void>;
+
+  addStream: (stream: Omit<Stream, 'id'>) => void;
+  updateStream: (stream: Stream) => void;
+  removeStream: (id: string) => void;
+
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setNotesContent: (content: string) => void;
   setEventLogOpen: (open: boolean) => void;
@@ -237,6 +235,16 @@ export const useDashboardStore = create<DashboardState>()(
         });
         await get().fetchTunnels();
       },
+
+      addStream: (stream) => set((state) => ({
+        streams: [...state.streams, { ...stream, id: new Date().toISOString() + Math.random() }]
+      })),
+      updateStream: (stream) => set((state) => ({
+        streams: state.streams.map(s => s.id === stream.id ? stream : s)
+      })),
+      removeStream: (id) => set((state) => ({
+        streams: state.streams.filter(s => s.id !== id)
+      })),
 
       addLog: (log) => set((state) => ({
         logs: [
