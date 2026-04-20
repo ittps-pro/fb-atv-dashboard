@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { useDashboardStore, type AppConfig } from '@/store/use-dashboard-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music, Tv, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music, Tv, CheckCircle, XCircle, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Youtube,
@@ -14,6 +16,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Clapperboard,
   Gamepad2,
   Music,
+  Tv,
 };
 
 type Status = 'online' | 'offline' | 'issues';
@@ -116,13 +119,47 @@ const DeviceStatusCard = () => {
 }
 
 export default function AppsStatusPage() {
-    const { apps } = useDashboardStore();
+    const { apps, syncApps, addLog } = useDashboardStore();
+    const [isSyncing, setIsSyncing] = useState(false);
+    const { toast } = useToast();
+
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            await syncApps();
+            toast({
+                title: "Sync Complete",
+                description: "App list has been updated from the active device.",
+            });
+            addLog({ message: "App sync complete.", type: 'info' });
+        } catch (error: any) {
+            toast({
+                title: "Sync Failed",
+                description: error.message,
+                variant: 'destructive',
+            });
+            addLog({ message: `App sync failed: ${error.message}`, type: 'error' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
 
     return (
         <>
           <div className="absolute inset-0 h-full w-full bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-10 dark:bg-[radial-gradient(hsl(var(--accent))_0.5px,transparent_0.5px)]"></div>
           <main className="relative z-10 p-4 md:p-6 space-y-8 h-screen flex flex-col">
-            <DashboardHeader />
+            <div className="flex justify-between items-center">
+                <DashboardHeader />
+                <Button onClick={handleSync} disabled={isSyncing}>
+                    {isSyncing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Sync Apps from Device
+                </Button>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 <DeviceStatusCard />
                 {apps.map(app => (

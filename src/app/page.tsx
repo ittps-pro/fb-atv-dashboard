@@ -77,7 +77,7 @@ function RecommendationsLoader() {
 
 
 export default function Home() {
-  const { widgets, torrentStream, fetchDevices, fetchTunnels } = useDashboardStore();
+  const { widgets, torrentStream, fetchDevices, fetchTunnels, fetchApps } = useDashboardStore();
   
   // This state helps prevent hydration mismatches with persisted zustand state.
   const [isMounted, setIsMounted] = useState(false);
@@ -85,7 +85,8 @@ export default function Home() {
     setIsMounted(true);
     fetchDevices();
     fetchTunnels();
-  }, [fetchDevices, fetchTunnels]);
+    fetchApps();
+  }, [fetchDevices, fetchTunnels, fetchApps]);
 
   if (!isMounted) {
       return (

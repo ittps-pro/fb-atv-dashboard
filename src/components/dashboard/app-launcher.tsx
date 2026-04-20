@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Grid3x3 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useDashboardStore } from '@/store/use-dashboard-store';
-import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
+import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music, Tv } from 'lucide-react';
 
-const iconMap = {
+const iconMap: Record<string, React.FC<any>> = {
   Youtube,
   Twitch,
   Film,
   Clapperboard,
   Gamepad2,
   Music,
+  Tv,
 };
 
 export function AppLauncher() {
@@ -86,7 +87,7 @@ export function AppLauncher() {
                 className="group cursor-pointer bg-secondary/40 hover:bg-accent/20 transition-all duration-300 flex flex-col items-center justify-center p-4 aspect-square"
               >
                   <div className="p-3 bg-secondary rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/30">
-                    {Icon ? <Icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" /> : <Gamepad2 className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />}
+                    {Icon ? <Icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" /> : <Tv className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />}
                   </div>
                   <p className="text-sm font-medium text-center mt-2 truncate">{app.name}</p>
               </Card>

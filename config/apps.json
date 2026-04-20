@@ -1,0 +1,32 @@
+[
+  {
+    "name": "YouTube",
+    "iconName": "Youtube",
+    "packageName": "com.google.android.youtube.tv"
+  },
+  {
+    "name": "Twitch",
+    "iconName": "Twitch",
+    "packageName": "tv.twitch.android.app"
+  },
+  {
+    "name": "Plex",
+    "iconName": "Film",
+    "packageName": "com.plexapp.android"
+  },
+  {
+    "name": "Movies",
+    "iconName": "Clapperboard",
+    "packageName": "com.google.android.videos"
+  },
+  {
+    "name": "Games",
+    "iconName": "Gamepad2",
+    "packageName": "com.google.android.play.games"
+  },
+  {
+    "name": "Music",
+    "iconName": "Music",
+    "packageName": "com.spotify.tv.android"
+  }
+]

@@ -3,54 +3,14 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { z } from 'zod';
-import { apps as defaultApps, allStreams, videoStream as defaultTorrentStream } from '@/lib/mock-data';
-import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
+import { type AppConfig } from '@/types/apps';
+import { allStreams, videoStream as defaultTorrentStream } from '@/lib/mock-data';
 import { type Tunnel } from '@/types/tunnels';
 import { type Device } from '@/types/devices';
 import { type Stream } from '@/types/streams';
 import { type Storage } from '@/types/storage';
+import { LogEntry, LogEntrySchema } from '@/types/logs';
 
-
-const iconMap = {
-  Youtube,
-  Twitch,
-  Film,
-  Clapperboard,
-  Gamepad2,
-  Music,
-};
-
-const AppConfigSchema = z.object({
-  name: z.string(),
-  iconName: z.enum(['Youtube', 'Twitch', 'Film', 'Clapperboard', 'Gamepad2', 'Music']),
-  packageName: z.string().optional(),
-});
-
-export type AppConfig = z.infer<typeof AppConfigSchema>;
-
-const WidgetVisibilitySchema = z.object({
-  recommendations: z.boolean(),
-  appLauncher: z.boolean(),
-  fileManager: z.boolean(),
-  videoStream: z.boolean(),
-  news: z.boolean(),
-  weather: z.boolean(),
-  sports: z.boolean(),
-  remoteControl: z.boolean(),
-  notes: z.boolean(),
-});
-
-export type WidgetVisibility = z.infer<typeof WidgetVisibilitySchema>;
-
-const LogEntrySchema = z.object({
-    id: z.string(),
-    timestamp: z.string(),
-    message: z.string(),
-    type: z.enum(['info', 'warning', 'error']),
-});
-  
-export type LogEntry = z.infer<typeof LogEntrySchema>;
 
 interface DashboardState {
   apps: AppConfig[];
@@ -70,6 +30,9 @@ interface DashboardState {
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   
+  fetchApps: () => Promise<void>;
+  syncApps: () => Promise<void>;
+
   fetchDevices: () => Promise<void>;
   addDevice: (device: Omit<Device, 'id'>) => Promise<void>;
   updateDevice: (device: Device) => Promise<void>;
@@ -104,16 +67,22 @@ interface DashboardState {
   setTheme: (theme: string) => void;
 }
 
-const initialApps = defaultApps.map(app => ({
-    name: app.name,
-    iconName: app.icon.name as keyof typeof iconMap,
-    packageName: app.packageName,
-}));
+export interface WidgetVisibility {
+    recommendations: boolean;
+    appLauncher: boolean;
+    fileManager: boolean;
+    videoStream: boolean;
+    news: boolean;
+    weather: boolean;
+    sports: boolean;
+    remoteControl: boolean;
+    notes: boolean;
+}
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set, get) => ({
-      apps: initialApps,
+      apps: [],
       widgets: {
         recommendations: true,
         appLauncher: true,
@@ -151,10 +120,49 @@ export const useDashboardStore = create<DashboardState>()(
       toggleWidgetVisibility: (widget) => set((state) => ({
         widgets: {
           ...state.widgets,
-          [widget]: !state.widgets[widget],
+          [widget]: !state.widgets[widget as keyof WidgetVisibility],
         },
       })),
       
+      fetchApps: async () => {
+        try {
+          const response = await fetch('/api/apps');
+          if (!response.ok) throw new Error("Failed to fetch apps config");
+          const apps = await response.json();
+          set({ apps });
+        } catch (error) {
+          console.error("Failed to fetch apps:", error);
+          get().addLog({ message: "Could not load apps from server.", type: 'error' });
+        }
+      },
+
+      syncApps: async () => {
+        const { activeDeviceId, devices, addLog, fetchApps } = get();
+        const activeDevice = devices.find(d => d.id === activeDeviceId);
+
+        if (!activeDevice) {
+            throw new Error('No active device selected.');
+        }
+        if (activeDevice.connectionType !== 'direct') {
+            throw new Error("App sync only works with direct device connections for now.");
+        }
+
+        addLog({ message: `Syncing apps from ${activeDevice.name}...`, type: 'info' });
+
+        const response = await fetch('/api/apps/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceIp: activeDevice.ip, devicePort: activeDevice.port }),
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.details || 'Failed to sync apps.');
+        }
+
+        await fetchApps();
+      },
+
       fetchDevices: async () => {
         try {
           const response = await fetch('/api/devices');
@@ -329,7 +337,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'eventLogOpen', 'isCommandPaletteOpen', 'logs'].includes(key))
         ),
     }
   )

@@ -1,14 +1,5 @@
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
 
-export const apps = [
-  { name: 'YouTube', icon: Youtube, packageName: 'com.google.android.youtube.tv' },
-  { name: 'Twitch', icon: Twitch, packageName: 'tv.twitch.android.app' },
-  { name: 'Plex', icon: Film, packageName: 'com.plexapp.android' },
-  { name: 'Movies', icon: Clapperboard, packageName: 'com.google.android.videos' },
-  { name: 'Games', icon: Gamepad2, packageName: 'com.google.android.play.games' },
-  { name: 'Music', icon: Music, packageName: 'com.spotify.tv.android' },
-];
-
 export const newsItems = [
     { id: 1, headline: 'Global Tech Summit Announces New AI Breakthroughs', source: 'Tech Today' },
     { id: 2, headline: 'Market Hits Record High Amidst Economic Optimism', source: 'Finance World' },
