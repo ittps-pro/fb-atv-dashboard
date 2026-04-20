@@ -5,6 +5,7 @@ import { allStreams, videoStream as webtorrentStream } from "@/lib/mock-data";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PlayCircle } from "lucide-react";
 import { VideoPlayer } from "@/components/dashboard/video-player";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +22,18 @@ const streamGroups = allStreams.reduce((acc, stream) => {
 
 export default function StreamsPage() {
     const [selectedStream, setSelectedStream] = useState(allStreams[0]);
+    const [customUrl, setCustomUrl] = useState('');
+
+    const handlePlayCustomUrl = () => {
+        if (customUrl.trim()) {
+            setSelectedStream({
+                id: 'custom-url',
+                name: 'Custom Stream',
+                url: customUrl,
+                category: 'Custom'
+            });
+        }
+    };
 
     return (
         <>
@@ -37,12 +50,23 @@ export default function StreamsPage() {
                         <CardHeader>
                             <CardTitle>Available Streams</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-grow overflow-hidden">
-                             <ScrollArea className="h-full pr-4">
+                        <CardContent className="flex-grow overflow-hidden flex flex-col gap-4">
+                             <div className="px-2 space-y-2 shrink-0">
+                                <h3 className="text-lg font-semibold">Play from URL</h3>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        placeholder="Enter stream URL (.mp4, .m3u8)"
+                                        value={customUrl}
+                                        onChange={(e) => setCustomUrl(e.target.value)}
+                                    />
+                                    <Button onClick={handlePlayCustomUrl}>Play</Button>
+                                </div>
+                             </div>
+                             <Separator className="shrink-0" />
+                             <ScrollArea className="pr-4">
                                 <div className="flex flex-col gap-2">
                                     {Object.entries(streamGroups).map(([category, streams], index) => (
                                         <div key={category}>
-                                            {index > 0 && <Separator className="my-4" />}
                                             <h3 className="text-lg font-semibold mb-2 px-2">{category}</h3>
                                             {streams.map((stream) => (
                                                 <Button
@@ -55,6 +79,7 @@ export default function StreamsPage() {
                                                     <span>{stream.name}</span>
                                                 </Button>
                                             ))}
+                                            {index < Object.keys(streamGroups).length - 1 && <Separator className="my-4" />}
                                         </div>
                                     ))}
                                 </div>
