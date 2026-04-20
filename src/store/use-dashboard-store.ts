@@ -65,6 +65,7 @@ interface DashboardState {
   logs: LogEntry[];
   notesContent: string;
   eventLogOpen: boolean;
+  isCommandPaletteOpen: boolean;
   fullscreenLayout: (keyof WidgetVisibility)[];
   theme: string;
   setApps: (apps: AppConfig[]) => void;
@@ -84,6 +85,8 @@ interface DashboardState {
   setNotesContent: (content: string) => void;
   setEventLogOpen: (open: boolean) => void;
   toggleEventLog: () => void;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
   setFullscreenLayout: (layout: (keyof WidgetVisibility)[]) => void;
   setTheme: (theme: string) => void;
 }
@@ -129,6 +132,7 @@ export const useDashboardStore = create<DashboardState>()(
       logs: [],
       notesContent: '',
       eventLogOpen: false,
+      isCommandPaletteOpen: false,
       theme: 'orange',
       setApps: (apps) => set({ apps }),
       toggleWidgetVisibility: (widget) => set((state) => ({
@@ -221,6 +225,8 @@ export const useDashboardStore = create<DashboardState>()(
       setNotesContent: (content) => set({ notesContent: content }),
       setEventLogOpen: (open) => set({ eventLogOpen: open }),
       toggleEventLog: () => set((state) => ({ eventLogOpen: !state.eventLogOpen })),
+      setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
+      toggleCommandPalette: () => set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
       setFullscreenLayout: (layout) => set({ fullscreenLayout: layout }),
       setTheme: (theme) => set({ theme }),
     }),
@@ -229,7 +235,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
         ),
     }
   )

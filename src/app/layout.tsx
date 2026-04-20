@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -5,6 +6,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { EventLogController } from '@/components/dashboard/event-log-controller';
 import { NavigationSidebar } from '@/components/dashboard/navigation-sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
+import { CommandPaletteController } from '@/components/dashboard/command-palette-controller';
 
 export const metadata: Metadata = {
   title: 'Action Dashboard',
@@ -31,6 +33,7 @@ export default function RootLayout({
               {children}
             </div>
             <EventLogController />
+            <CommandPaletteController />
             <Toaster />
           </SidebarProvider>
         </ThemeProvider>
