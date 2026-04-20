@@ -32,9 +32,12 @@ const deviceFormSchema = z.discriminatedUnion("connectionType", [
   baseDeviceFormSchema.extend({
     connectionType: z.literal('tunnel'),
     tunnelId: z.string({ required_error: "Please select a tunnel." }),
+    ip: z.string().min(1, { message: "Device IP within the tunnel network is required." }),
+    port: z.coerce.number().min(1).max(65535).optional(),
   }),
   baseDeviceFormSchema.extend({
     connectionType: z.literal('reverse-tunnel'),
+    port: z.coerce.number().min(1).max(65535).optional(),
   }),
 ]);
 
@@ -68,7 +71,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
         if (open) {
             if (deviceToEdit) {
                 const defaultValues: any = { ...deviceToEdit };
-                if (deviceToEdit.connectionType === 'direct' && !deviceToEdit.port) {
+                if ((deviceToEdit.connectionType === 'direct' || deviceToEdit.connectionType === 'reverse-tunnel') && !deviceToEdit.port) {
                     defaultValues.port = 5555;
                 }
                 form.reset(defaultValues);
@@ -120,24 +123,22 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
     
     const onSaveDevice = async () => {
         const data = form.getValues();
+        
         let deviceData: Omit<Device, 'id'> = {
             name: data.name,
             connectionType: data.connectionType,
-            ip: '', // Default value
-            tunnelId: undefined,
-            port: undefined,
-        };
-    
+        } as Omit<Device, 'id'>;
+
         if (data.connectionType === 'direct') {
             deviceData.ip = data.ip;
             deviceData.port = data.port;
         } else if (data.connectionType === 'tunnel') {
-            const selectedTunnel = tunnels.find(t => t.id === data.tunnelId);
+            deviceData.ip = data.ip;
+            deviceData.port = data.port;
             deviceData.tunnelId = data.tunnelId;
-            deviceData.ip = selectedTunnel?.config?.host || 'Tunneled';
         } else if (data.connectionType === 'reverse-tunnel') {
-            deviceData.ip = 'localhost';
-            deviceData.port = 5555; // Example port
+            deviceData.ip = 'localhost'; // IP will be localhost for reverse tunnels
+            deviceData.port = data.port || 5555;
         }
     
         if (deviceToEdit) {
@@ -214,41 +215,54 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                                 )}
 
                                 {watchedConnectionType === 'tunnel' && (
-                                    <FormField control={form.control} name="tunnelId" render={({ field }) => (
-                                        <FormItem><FormLabel>Select Tunnel</FormLabel>
-                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select a configured tunnel" /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    {tunnels.map((tunnel) => <SelectItem key={tunnel.id} value={tunnel.id}>{tunnel.name} ({tunnel.protocol})</SelectItem>)}
-                                                    {tunnels.length === 0 && <div className="p-2 text-sm text-muted-foreground">No tunnels configured.</div>}
-                                                </SelectContent>
-                                            </Select>
-                                        <FormMessage /></FormItem>
-                                    )} />
+                                    <>
+                                        <FormField control={form.control} name="tunnelId" render={({ field }) => (
+                                            <FormItem><FormLabel>Select Tunnel</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a configured tunnel" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {tunnels.map((tunnel) => <SelectItem key={tunnel.id} value={tunnel.id}>{tunnel.name} ({tunnel.protocol})</SelectItem>)}
+                                                        {tunnels.length === 0 && <div className="p-2 text-sm text-muted-foreground">No tunnels configured.</div>}
+                                                    </SelectContent>
+                                                </Select>
+                                            <FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="ip" render={({ field }) => (
+                                            <FormItem><FormLabel>Device IP (in Tunnel)</FormLabel><FormControl><Input placeholder="Device IP reachable from tunnel server" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                         <FormField control={form.control} name="port" render={({ field }) => (
+                                            <FormItem><FormLabel>Device ADB Port (in Tunnel)</FormLabel><FormControl><Input type="number" placeholder="5555" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </>
                                 )}
                                 
                                 {watchedConnectionType === 'reverse-tunnel' && (
-                                    <div className="space-y-4 pt-4 border-t">
-                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Info className="h-5 w-5 text-accent"/>Reverse Tunnel Setup</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Run a command on your remote device to create a secure connection back to this dashboard server. This is ideal for devices behind a firewall.
-                                        </p>
-                                        <div className="space-y-2">
-                                            <Label>1. Generate an SSH key on your device</Label>
-                                            <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh-keygen -t ed25519 -f ~/.ssh/dashboard_key</code></pre>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>2. Add public key to this server</Label>
+                                    <>
+                                        <FormField control={form.control} name="port" render={({ field }) => (
+                                            <FormItem><FormLabel>Local Forwarded Port</FormLabel><FormControl><Input type="number" placeholder="5555" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <div className="space-y-4 pt-4 border-t">
+                                            <h3 className="font-semibold text-lg flex items-center gap-2"><Info className="h-5 w-5 text-accent"/>Reverse Tunnel Setup</h3>
                                             <p className="text-sm text-muted-foreground">
-                                                Copy the content of `~/.ssh/dashboard_key.pub` from your device and add it to the `~/.ssh/authorized_keys` file on this server.
+                                                Run a command on your remote device to create a secure connection back to this dashboard server. This is ideal for devices behind a firewall.
                                             </p>
+                                            <div className="space-y-2">
+                                                <Label>1. Generate an SSH key on your device</Label>
+                                                <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh-keygen -t ed25519 -f ~/.ssh/dashboard_key</code></pre>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>2. Add public key to this server</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Copy the content of `~/.ssh/dashboard_key.pub` from your device and add it to the `~/.ssh/authorized_keys` file on this server.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>3. Run the reverse tunnel command on your device</Label>
+                                                <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh -N -R {form.getValues('port') || 5555}:localhost:5555 user@your-dashboard-server-ip -i ~/.ssh/dashboard_key</code></pre>
+                                                <p className="text-xs text-muted-foreground">This forwards the device's ADB port (5555) to this server's port {form.getValues('port') || 5555}.</p>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>3. Run the reverse tunnel command</Label>
-                                            <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh -N -R 5555:localhost:5555 user@your-dashboard-server-ip -i ~/.ssh/dashboard_key</code></pre>
-                                            <p className="text-xs text-muted-foreground">This command forwards the remote device's ADB port (5555) to this server's port 5555.</p>
-                                        </div>
-                                    </div>
+                                    </>
                                 )}
 
 

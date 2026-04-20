@@ -31,6 +31,7 @@ export function SettingsPanel() {
     widgets, 
     toggleWidgetVisibility,
     devices,
+    tunnels,
     removeDevice,
     addLog,
     theme,
@@ -65,9 +66,10 @@ export function SettingsPanel() {
       case 'direct':
         return `${device.ip}:${device.port || 5555}`;
       case 'tunnel':
-        return 'via Tunnel';
+        const tunnel = tunnels.find(t => t.id === device.tunnelId);
+        return `${device.ip} via ${tunnel?.name || 'Tunnel'}`;
       case 'reverse-tunnel':
-          return `via Reverse Tunnel`;
+          return `${device.ip}:${device.port || 5555} via Reverse Tunnel`;
       default:
         return 'N/A';
     }
