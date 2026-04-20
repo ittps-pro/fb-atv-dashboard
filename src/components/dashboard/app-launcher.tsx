@@ -49,7 +49,7 @@ export function AppLauncher() {
       const response = await fetch('/api/launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageName, deviceIp: activeDevice.ip }),
+        body: JSON.stringify({ packageName, deviceIp: activeDevice.ip, devicePort: activeDevice.port }),
       });
 
       const result = await response.json();

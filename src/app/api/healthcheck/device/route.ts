@@ -4,13 +4,14 @@ import { executeCommand } from '@/lib/adb';
 // This is a simplified health check. A robust solution might involve
 // checking for a specific service or response from the device.
 export async function POST(request: Request) {
-  const { ip } = await request.json();
+  const { ip, port } = await request.json();
 
   if (!ip) {
     return NextResponse.json({ error: 'Device IP is required' }, { status: 400 });
   }
 
-  const deviceAddress = `${ip}:5555`;
+  const adbPort = port || 5555;
+  const deviceAddress = `${ip}:${adbPort}`;
 
   try {
     // Try to connect. If it fails, it will throw.

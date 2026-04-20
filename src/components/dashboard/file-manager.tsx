@@ -72,6 +72,9 @@ export function FileManager() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('deviceIp', activeDevice.ip);
+    if (activeDevice.port) {
+      formData.append('devicePort', activeDevice.port.toString());
+    }
 
     try {
       const response = await fetch('/api/install', {

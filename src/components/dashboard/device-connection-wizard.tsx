@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowRight, Tv, ShieldCheck, CheckCircle, AlertTriangle, Route } from "lucide-react";
+import { Loader2, ArrowRight, Tv, ShieldCheck, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Label } from '../ui/label';
 
 // Base schema for common fields
 const baseDeviceFormSchema = z.object({
@@ -26,12 +27,14 @@ const deviceFormSchema = z.discriminatedUnion("connectionType", [
   baseDeviceFormSchema.extend({
     connectionType: z.literal('direct'),
     ip: z.string().ip({ version: "v4", message: "Please enter a valid IPv4 address." }),
-    tunnelId: z.string().optional(),
+    port: z.coerce.number().min(1).max(65535).default(5555),
   }),
   baseDeviceFormSchema.extend({
     connectionType: z.literal('tunnel'),
-    ip: z.string().optional(), // IP might not be needed if tunnel handles it
     tunnelId: z.string({ required_error: "Please select a tunnel." }),
+  }),
+  baseDeviceFormSchema.extend({
+    connectionType: z.literal('reverse-tunnel'),
   }),
 ]);
 
@@ -56,7 +59,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
     
     const form = useForm<DeviceFormValues>({
         resolver: zodResolver(deviceFormSchema),
-        defaultValues: { name: "", ip: "", connectionType: "direct" },
+        defaultValues: { name: "", connectionType: "direct", ip: "", port: 5555 },
     });
 
     const watchedConnectionType = form.watch("connectionType");
@@ -64,10 +67,14 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
     useEffect(() => {
         if (open) {
             if (deviceToEdit) {
-                form.reset(deviceToEdit);
+                const defaultValues: any = { ...deviceToEdit };
+                if (deviceToEdit.connectionType === 'direct' && !deviceToEdit.port) {
+                    defaultValues.port = 5555;
+                }
+                form.reset(defaultValues);
                 setCurrentStep('details');
             } else {
-                form.reset({ name: "", ip: "", connectionType: "direct" });
+                form.reset({ name: "", connectionType: "direct", ip: "", port: 5555 });
                 setCurrentStep('welcome');
             }
             setTestStatus('idle');
@@ -76,31 +83,21 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
     }, [open, deviceToEdit, form]);
 
     const handleTestConnection = async (data: DeviceFormValues) => {
-        setTestStatus('loading');
-        setErrorMessage('');
-        
-        let ipToTest: string | undefined;
-        if (data.connectionType === 'direct') {
-            ipToTest = data.ip;
-        } else if (data.connectionType === 'tunnel') {
-            const selectedTunnel = tunnels.find(t => t.id === data.tunnelId);
-            // This is a placeholder. In a real scenario, you'd get the tunnel's
-            // local forwarding IP or handle the connection differently.
-            ipToTest = selectedTunnel?.config?.host; 
-            console.log(`Testing connection for tunnel ${selectedTunnel?.name}. In a real app, this would use the tunnel proxy.`);
-        }
-
-        if (!ipToTest) {
-            setTestStatus('error');
-            setErrorMessage('Could not determine IP address to test.');
+        if (data.connectionType !== 'direct') {
+            setTestStatus('success'); // Skip test for non-direct connections for this demo
             return;
         }
 
-        addLog({ message: `Testing connection to ${ipToTest}`, type: 'info' });
+        setTestStatus('loading');
+        setErrorMessage('');
+        
+        let ipToTest = data.ip;
+
+        addLog({ message: `Testing connection to ${ipToTest}:${data.port}`, type: 'info' });
         try {
             const response = await fetch('/api/healthcheck/device', {
                 method: 'POST',
-                body: JSON.stringify({ ip: ipToTest }),
+                body: JSON.stringify({ ip: ipToTest, port: data.port }),
                 headers: { 'Content-Type': 'application/json' },
             });
             const result = await response.json();
@@ -108,7 +105,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                 throw new Error(result.reason || result.error || 'Failed to connect');
             }
             setTestStatus('success');
-            addLog({ message: `Successfully connected to ${ipToTest}`, type: 'info' });
+            addLog({ message: `Successfully connected to ${ipToTest}:${data.port}`, type: 'info' });
 
         } catch (error: any) {
             setTestStatus('error');
@@ -121,17 +118,34 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
         await handleTestConnection(data);
     }
     
-    const onSaveDevice = () => {
+    const onSaveDevice = async () => {
         const data = form.getValues();
-        // Ensure IP is set for direct, even if not required for tunnel
-        const deviceData = { ...data, ip: data.ip || '' }
-
+        let deviceData: Omit<Device, 'id'> = {
+            name: data.name,
+            connectionType: data.connectionType,
+            ip: '', // Default value
+            tunnelId: undefined,
+            port: undefined,
+        };
+    
+        if (data.connectionType === 'direct') {
+            deviceData.ip = data.ip;
+            deviceData.port = data.port;
+        } else if (data.connectionType === 'tunnel') {
+            const selectedTunnel = tunnels.find(t => t.id === data.tunnelId);
+            deviceData.tunnelId = data.tunnelId;
+            deviceData.ip = selectedTunnel?.config?.host || 'Tunneled';
+        } else if (data.connectionType === 'reverse-tunnel') {
+            deviceData.ip = 'localhost';
+            deviceData.port = 5555; // Example port
+        }
+    
         if (deviceToEdit) {
-            updateDevice({ ...deviceToEdit, ...deviceData });
+            await updateDevice({ id: deviceToEdit.id, ...deviceData });
             toast({ title: "Device Updated", description: `${data.name} has been updated.` });
             addLog({ message: `Device updated: ${data.name}`, type: 'info' });
         } else {
-            addDevice(deviceData);
+            await addDevice(deviceData as Omit<Device, 'id'>);
             toast({ title: "Device Added", description: `${data.name} has been added.` });
             addLog({ message: `Device added: ${data.name}`, type: 'info' });
         }
@@ -170,7 +184,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                                 <FormField control={form.control} name="connectionType" render={({ field }) => (
                                     <FormItem className="space-y-3"><FormLabel>Connection Type</FormLabel>
                                         <FormControl>
-                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4">
                                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="direct" /></FormControl>
                                                     <FormLabel className="font-normal">Direct (Local Network)</FormLabel>
@@ -179,15 +193,24 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                                                     <FormControl><RadioGroupItem value="tunnel" /></FormControl>
                                                     <FormLabel className="font-normal">Tunnel</FormLabel>
                                                 </FormItem>
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                                    <FormControl><RadioGroupItem value="reverse-tunnel" /></FormControl>
+                                                    <FormLabel className="font-normal">Reverse Tunnel</FormLabel>
+                                                </FormItem>
                                             </RadioGroup>
                                         </FormControl>
                                     <FormMessage /></FormItem>
                                 )} />
 
                                 {watchedConnectionType === 'direct' && (
-                                     <FormField control={form.control} name="ip" render={({ field }) => (
-                                        <FormItem><FormLabel>IP Address</FormLabel><FormControl><Input placeholder="e.g., 192.168.1.100" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
+                                     <>
+                                        <FormField control={form.control} name="ip" render={({ field }) => (
+                                            <FormItem><FormLabel>IP Address</FormLabel><FormControl><Input placeholder="e.g., 192.168.1.100" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="port" render={({ field }) => (
+                                            <FormItem><FormLabel>ADB Port</FormLabel><FormControl><Input type="number" placeholder="5555" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </>
                                 )}
 
                                 {watchedConnectionType === 'tunnel' && (
@@ -203,17 +226,47 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                                         <FormMessage /></FormItem>
                                     )} />
                                 )}
+                                
+                                {watchedConnectionType === 'reverse-tunnel' && (
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Info className="h-5 w-5 text-accent"/>Reverse Tunnel Setup</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            Run a command on your remote device to create a secure connection back to this dashboard server. This is ideal for devices behind a firewall.
+                                        </p>
+                                        <div className="space-y-2">
+                                            <Label>1. Generate an SSH key on your device</Label>
+                                            <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh-keygen -t ed25519 -f ~/.ssh/dashboard_key</code></pre>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>2. Add public key to this server</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Copy the content of `~/.ssh/dashboard_key.pub` from your device and add it to the `~/.ssh/authorized_keys` file on this server.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>3. Run the reverse tunnel command</Label>
+                                            <pre className="bg-secondary p-2 rounded-md text-xs overflow-x-auto"><code>ssh -N -R 5555:localhost:5555 user@your-dashboard-server-ip -i ~/.ssh/dashboard_key</code></pre>
+                                            <p className="text-xs text-muted-foreground">This command forwards the remote device's ADB port (5555) to this server's port 5555.</p>
+                                        </div>
+                                    </div>
+                                )}
 
 
                                 <div className="flex justify-end">
-                                    <Button type="submit" disabled={testStatus === 'loading'}>
-                                        {testStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                                        Test Connection
-                                    </Button>
+                                    {watchedConnectionType === 'direct' ? (
+                                        <Button type="submit" disabled={testStatus === 'loading'}>
+                                            {testStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                                            Test Connection
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={onSaveDevice}>
+                                            Save Device
+                                        </Button>
+                                    )}
                                 </div>
                             </form>
                         </Form>
-                        {testStatus === 'success' && (
+                        {testStatus === 'success' && watchedConnectionType === 'direct' && (
                             <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-center space-y-3">
                                 <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
                                 <p className="font-semibold text-green-400">Connection Successful!</p>
@@ -226,7 +279,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
                                 <p className="font-semibold text-destructive">Connection Failed</p>
                                 <p className="text-sm text-muted-foreground">{errorMessage}</p>
                                 <p className="text-xs text-muted-foreground pt-2">
-                                    Please double-check the IP address. You may also need to accept the authorization prompt on your TV screen.
+                                    Please double-check the IP and Port. You may also need to accept the authorization prompt on your TV screen.
                                 </p>
                                 <Button variant="outline" onClick={() => handleTestConnection(form.getValues())} disabled={testStatus === 'loading'}>
                                     {testStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

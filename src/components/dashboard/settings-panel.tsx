@@ -60,6 +60,19 @@ export function SettingsPanel() {
     addLog({ message: `Device removed: ${device.name}`, type: 'info' });
   }
 
+  const getConnectionDetails = (device: Device) => {
+    switch (device.connectionType) {
+      case 'direct':
+        return `${device.ip}:${device.port || 5555}`;
+      case 'tunnel':
+        return 'via Tunnel';
+      case 'reverse-tunnel':
+          return `via Reverse Tunnel`;
+      default:
+        return 'N/A';
+    }
+  }
+
   return (
     <>
       <Sheet>
@@ -130,8 +143,9 @@ export function SettingsPanel() {
                                     <span className={cn("capitalize p-1 rounded-md text-xs", {
                                       "bg-blue-500/10 text-blue-400": device.connectionType === 'direct',
                                       "bg-purple-500/10 text-purple-400": device.connectionType === 'tunnel',
-                                    })}>{device.connectionType}</span>
-                                    <span className="ml-2">{device.connectionType === 'direct' ? device.ip : 'via Tunnel'}</span>
+                                      "bg-teal-500/10 text-teal-400": device.connectionType === 'reverse-tunnel',
+                                    })}>{device.connectionType.replace('-', ' ')}</span>
+                                    <span className="ml-2">{getConnectionDetails(device)}</span>
                                   </p>
                               </div>
                               <div className="flex gap-1">

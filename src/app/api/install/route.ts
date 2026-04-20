@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const data = await request.formData();
     const file: File | null = data.get('file') as unknown as File;
     const deviceIp = data.get('deviceIp') as string | null;
+    const devicePort = data.get('devicePort') as string | null;
 
     if (!deviceIp) {
       return NextResponse.json({ error: 'Android TV device IP is not configured.' }, { status: 400 });
@@ -38,7 +39,8 @@ export async function POST(request: Request) {
     console.log(`Writing file to temporary path: ${tempPath}`);
     await writeFile(tempPath, buffer);
 
-    const deviceAddress = `${deviceIp}:5555`;
+    const adbPort = devicePort || '5555';
+    const deviceAddress = `${deviceIp}:${adbPort}`;
     
     await executeCommand(`adb connect ${deviceAddress}`);
 

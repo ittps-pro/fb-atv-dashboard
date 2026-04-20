@@ -12,7 +12,7 @@ import { executeCommand } from '@/lib/adb';
 
 
 export async function POST(request: Request) {
-  const { packageName, deviceIp } = await request.json();
+  const { packageName, deviceIp, devicePort } = await request.json();
 
   if (!packageName) {
     return NextResponse.json({ error: 'Package name is required' }, { status: 400 });
@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Android TV device IP is not configured.' }, { status: 400 });
   }
 
-  const deviceAddress = `${deviceIp}:5555`;
+  const adbPort = devicePort || 5555;
+  const deviceAddress = `${deviceIp}:${adbPort}`;
 
   try {
     await executeCommand(`adb connect ${deviceAddress}`);

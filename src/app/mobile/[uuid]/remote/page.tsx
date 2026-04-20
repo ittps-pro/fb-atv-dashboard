@@ -48,7 +48,7 @@ export default function MobileRemotePage() {
             const response = await fetch('/api/remote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyCode, deviceIp: device.ip }),
+                body: JSON.stringify({ keyCode, deviceIp: device.ip, devicePort: device.port }),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.details || result.error || 'Failed to send key.');
@@ -63,7 +63,7 @@ export default function MobileRemotePage() {
              const response = await fetch('/api/launch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ packageName, deviceIp: device.ip }),
+                body: JSON.stringify({ packageName, deviceIp: device.ip, devicePort: device.port }),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.details || 'Failed to launch app.');
