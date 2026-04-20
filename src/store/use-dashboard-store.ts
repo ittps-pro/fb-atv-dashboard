@@ -10,6 +10,7 @@ import { type Device } from '@/types/devices';
 import { type Stream } from '@/types/streams';
 import { type Storage } from '@/types/storage';
 import { LogEntry, LogEntrySchema } from '@/types/logs';
+import { type DashboardAction } from '@/types/actions';
 
 
 interface DashboardState {
@@ -19,6 +20,7 @@ interface DashboardState {
   activeDeviceId: string | null;
   tunnels: Tunnel[];
   storages: Storage[];
+  actions: DashboardAction[];
   streams: Stream[];
   torrentStream: { name: string; magnetUri: string };
   logs: LogEntry[];
@@ -53,6 +55,12 @@ interface DashboardState {
   removeStorage: (id: string) => Promise<void>;
   mountStorage: (id: string) => Promise<void>;
   unmountStorage: (id: string) => Promise<void>;
+
+  fetchActions: () => Promise<void>;
+  addAction: (action: Omit<DashboardAction, 'id'>) => Promise<void>;
+  updateAction: (action: DashboardAction) => Promise<void>;
+  removeAction: (id: string) => Promise<void>;
+  triggerAction: (id: string) => Promise<{success: boolean, message: string, stdout?: string, stderr?: string}>;
 
   addStream: (stream: Omit<Stream, 'id'>) => void;
   updateStream: (stream: Stream) => void;
@@ -109,6 +117,7 @@ export const useDashboardStore = create<DashboardState>()(
       devices: [],
       tunnels: [],
       storages: [],
+      actions: [],
       streams: allStreams,
       torrentStream: defaultTorrentStream,
       activeDeviceId: null,
@@ -314,6 +323,54 @@ export const useDashboardStore = create<DashboardState>()(
         });
         await get().fetchStorages();
       },
+      
+      fetchActions: async () => {
+        try {
+          const response = await fetch('/api/actions');
+          if (response.ok) {
+            const actions = await response.json();
+            set({ actions });
+          }
+        } catch (error) {
+          console.error("Failed to fetch actions:", error);
+        }
+      },
+      addAction: async (action) => {
+        await fetch('/api/actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(action),
+        });
+        await get().fetchActions();
+      },
+      updateAction: async (action) => {
+        await fetch(`/api/actions/${action.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(action),
+        });
+        await get().fetchActions();
+      },
+      removeAction: async (id) => {
+        await fetch(`/api/actions/${id}`, { method: 'DELETE' });
+        await get().fetchActions();
+      },
+      triggerAction: async (id) => {
+        const { activeDeviceId } = get();
+        if (!activeDeviceId) {
+          throw new Error('No active device selected.');
+        }
+        const response = await fetch('/api/actions/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ actionId: id, deviceId: activeDeviceId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.details || result.error || 'Failed to trigger action.');
+        }
+        return result;
+      },
 
       addStream: (stream) => set((state) => ({
         streams: [...state.streams, { ...stream, id: new Date().toISOString() + Math.random() }]
@@ -348,7 +405,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'eventLogOpen', 'isCommandPaletteOpen', 'logs'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'actions', 'eventLogOpen', 'isCommandPaletteOpen', 'logs'].includes(key))
         ),
     }
   )

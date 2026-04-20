@@ -3,7 +3,7 @@ import { icons, type LucideProps } from "lucide-react";
 export const iconNames = [
     'Tv', 'Youtube', 'Twitch', 'Film', 'Clapperboard', 'Gamepad2', 'Music', 'Home', 'Settings',
     'Folder', 'File', 'Download', 'Cloud', 'MessageSquare', 'Mail', 'Calendar', 'Camera', 'ShoppingBag',
-    'Book', 'Newspaper', 'Compass', 'Globe', 'Code', 'Terminal', 'AppWindow'
+    'Book', 'Newspaper', 'Compass', 'Globe', 'Code', 'Terminal', 'AppWindow', 'Bolt'
 ] as const;
 
 export type IconName = typeof iconNames[number];
@@ -35,5 +35,6 @@ export const iconMap: IconMap = {
     Globe: icons.Globe,
     Code: icons.Code,
     Terminal: icons.Terminal,
-    AppWindow: icons.AppWindow
+    AppWindow: icons.AppWindow,
+    Bolt: icons.Bolt,
 };

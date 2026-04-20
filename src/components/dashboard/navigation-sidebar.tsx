@@ -13,7 +13,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Video, Pencil, LayoutTemplate, Tv, Terminal, AppWindow, Network, Smartphone, HardDrive } from "lucide-react";
+import { LayoutDashboard, Video, Pencil, LayoutTemplate, Tv, Terminal, AppWindow, Network, Smartphone, HardDrive, Bolt } from "lucide-react";
 
 export function NavigationSidebar() {
   const pathname = usePathname();
@@ -26,6 +26,7 @@ export function NavigationSidebar() {
   ];
 
   const toolsMenuItems = [
+    { href: "/actions", label: "Actions", icon: Bolt },
     { href: "/terminal", label: "SSH Terminal", icon: Terminal },
     { href: "/tunnels", label: "Tunnels", icon: Network },
     { href: "/screen-mirror", label: "Screen Mirror", icon: Smartphone },
