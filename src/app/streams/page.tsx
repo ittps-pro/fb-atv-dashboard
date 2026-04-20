@@ -1,15 +1,23 @@
 "use client"
 
 import { useState } from "react";
-import { videoStreams } from "@/lib/mock-data";
+import { allStreams } from "@/lib/mock-data";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { VideoPlayer } from "@/components/dashboard/video-player";
+import { Separator } from "@/components/ui/separator";
+
+// Group streams by category
+const streamGroups = allStreams.reduce((acc, stream) => {
+    (acc[stream.category] = acc[stream.category] || []).push(stream);
+    return acc;
+}, {} as Record<string, typeof allStreams>);
+
 
 export default function StreamsPage() {
-    const [selectedStream, setSelectedStream] = useState(videoStreams[0]);
+    const [selectedStream, setSelectedStream] = useState(allStreams[0]);
 
     return (
         <>
@@ -26,16 +34,22 @@ export default function StreamsPage() {
                             <CardTitle>Available Streams</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-2">
-                            {videoStreams.map((stream) => (
-                                <Button
-                                    key={stream.id}
-                                    variant={selectedStream.id === stream.id ? "secondary" : "ghost"}
-                                    onClick={() => setSelectedStream(stream)}
-                                    className="justify-start gap-2"
-                                >
-                                    <PlayCircle className="h-5 w-5 text-accent" />
-                                    <span>{stream.name}</span>
-                                </Button>
+                            {Object.entries(streamGroups).map(([category, streams], index) => (
+                                <div key={category}>
+                                    {index > 0 && <Separator className="my-4" />}
+                                    <h3 className="text-lg font-semibold mb-2 px-2">{category}</h3>
+                                    {streams.map((stream) => (
+                                        <Button
+                                            key={stream.id}
+                                            variant={selectedStream.id === stream.id ? "secondary" : "ghost"}
+                                            onClick={() => setSelectedStream(stream)}
+                                            className="justify-start gap-2 w-full"
+                                        >
+                                            <PlayCircle className="h-5 w-5 text-muted-foreground" />
+                                            <span>{stream.name}</span>
+                                        </Button>
+                                    ))}
+                                </div>
                             ))}
                         </CardContent>
                     </Card>

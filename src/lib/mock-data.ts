@@ -27,20 +27,35 @@ export const videoStream = {
   magnetUri: 'magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969'
 };
 
-export const videoStreams = [
+export const allStreams = [
   {
-    id: 'bunnny',
-    name: 'Big Buck Bunny',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+    id: 'bunny-mp4',
+    name: 'Big Buck Bunny (MP4)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    category: 'VOD'
   },
   {
-    id: 'sintel',
-    name: 'Sintel',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4'
+    id: 'sintel-mp4',
+    name: 'Sintel (MP4)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    category: 'VOD'
   },
   {
-    id: 'tears-of-steel',
-    name: 'Tears of Steel',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+    id: 'tears-of-steel-mp4',
+    name: 'Tears of Steel (MP4)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    category: 'VOD'
+  },
+  {
+      id: 'nasa-live',
+      name: 'NASA TV',
+      url: 'https://nasa-i.akamaihd.net/hls/live/253566/NASA-NTV1-Public/master.m3u8',
+      category: 'Live TV'
+  },
+  {
+      id: 'bunny-hls',
+      name: 'Big Buck Bunny (HLS)',
+      url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+      category: 'Live TV'
   }
-]
+];
