@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { allStreams } from "@/lib/mock-data";
+import { useDashboardStore } from "@/store/use-dashboard-store";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,18 +12,19 @@ import { Separator } from "@/components/ui/separator";
 import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { videoStream as webtorrentStream } from "@/lib/mock-data";
-
-// Group streams by category
-const streamGroups = allStreams.reduce((acc, stream) => {
-    (acc[stream.category] = acc[stream.category] || []).push(stream);
-    return acc;
-}, {} as Record<string, typeof allStreams>);
 
 
 export default function StreamsPage() {
-    const [selectedStream, setSelectedStream] = useState(allStreams[0]);
+    const { streams, torrentStream } = useDashboardStore();
+    const [selectedStream, setSelectedStream] = useState(streams[0]);
     const [customUrl, setCustomUrl] = useState('');
+
+    // Group streams by category
+    const streamGroups = streams.reduce((acc, stream) => {
+        (acc[stream.category] = acc[stream.category] || []).push(stream);
+        return acc;
+    }, {} as Record<string, typeof streams>);
+
 
     const handlePlayCustomUrl = () => {
         if (customUrl.trim()) {
@@ -97,7 +98,7 @@ export default function StreamsPage() {
                     </div>
                 </TabsContent>
                 <TabsContent value="torrent" className="mt-6">
-                    <VideoStreamWidget initialMagnetUri={webtorrentStream.magnetUri} />
+                    <VideoStreamWidget initialMagnetUri={torrentStream.magnetUri} />
                 </TabsContent>
             </Tabs>
           </main>

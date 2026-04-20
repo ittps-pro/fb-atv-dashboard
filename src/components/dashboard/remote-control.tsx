@@ -11,12 +11,18 @@ export function RemoteControlWidget() {
     const { toast } = useToast();
     const { devices, activeDeviceId, addLog } = useDashboardStore();
     const activeDevice = devices.find(d => d.id === activeDeviceId);
-    const atvDeviceIp = activeDevice?.ip;
 
     const sendKeyEvent = async (keyCode: string) => {
-        if (!atvDeviceIp) {
+        if (!activeDevice) {
             const msg = "No active Android TV device selected.";
             addLog({ message: `Remote control failed: ${msg}`, type: 'error' });
+            toast({ title: 'Remote Failed', description: msg, variant: "destructive" });
+            return;
+        }
+
+        if (activeDevice.connectionType !== 'direct') {
+            const msg = "Remote control only works with direct device connections for now.";
+            addLog({ message: `Remote control failed: ${msg}`, type: 'warning' });
             toast({ title: 'Remote Failed', description: msg, variant: "destructive" });
             return;
         }
@@ -27,7 +33,7 @@ export function RemoteControlWidget() {
             const response = await fetch('/api/remote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyCode, deviceIp: atvDeviceIp }),
+                body: JSON.stringify({ keyCode, deviceIp: activeDevice.ip }),
             });
             
             const result = await response.json();

@@ -19,7 +19,6 @@ export function FileManager() {
   const { toast } = useToast();
   const { devices, activeDeviceId, addLog } = useDashboardStore();
   const activeDevice = devices.find(d => d.id === activeDeviceId);
-  const atvDeviceIp = activeDevice?.ip;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -40,9 +39,15 @@ export function FileManager() {
   };
 
   const handleInstall = async () => {
-    if (!atvDeviceIp) {
+    if (!activeDevice) {
       const msg = "No active Android TV device selected.";
       addLog({ message: `Install failed: ${msg}`, type: 'error' });
+      toast({ title: 'Installation Failed', description: msg, variant: "destructive" });
+      return;
+    }
+     if (activeDevice.connectionType !== 'direct') {
+      const msg = "App Installer only works with direct device connections for now.";
+      addLog({ message: `App install failed: ${msg}`, type: 'warning' });
       toast({ title: 'Installation Failed', description: msg, variant: "destructive" });
       return;
     }
@@ -66,7 +71,7 @@ export function FileManager() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('deviceIp', atvDeviceIp);
+    formData.append('deviceIp', activeDevice.ip);
 
     try {
       const response = await fetch('/api/install', {

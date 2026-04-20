@@ -57,5 +57,11 @@ export const allStreams = [
       name: 'Big Buck Bunny (HLS)',
       url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
       category: 'Live TV'
+  },
+  {
+    id: 'france24-live',
+    name: 'France 24 (Live)',
+    url: 'https://f24.live.out.ovh/fr/master.m3u8',
+    category: 'Live TV'
   }
 ];

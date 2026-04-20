@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { useDashboardStore, type Device } from '@/store/use-dashboard-store';
+import { useDashboardStore } from '@/store/use-dashboard-store';
+import { type Device } from '@/types/devices';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DeviceConnectionWizard } from './device-connection-wizard';
+import { cn } from '@/lib/utils';
 
 
 export function SettingsPanel() {
@@ -114,7 +116,13 @@ export function SettingsPanel() {
                           <div key={device.id} className="flex items-center justify-between p-2 rounded-md bg-secondary">
                               <div>
                                   <p className="font-medium">{device.name}</p>
-                                  <p className="text-sm text-muted-foreground">{device.ip}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    <span className={cn("capitalize p-1 rounded-md text-xs", {
+                                      "bg-blue-500/10 text-blue-400": device.connectionType === 'direct',
+                                      "bg-purple-500/10 text-purple-400": device.connectionType === 'tunnel',
+                                    })}>{device.connectionType}</span>
+                                    <span className="ml-2">{device.connectionType === 'direct' ? device.ip : 'via Tunnel'}</span>
+                                  </p>
                               </div>
                               <div className="flex gap-1">
                                   <Button variant="ghost" size="icon" onClick={() => handleEditDeviceClick(device)}>

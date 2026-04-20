@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { PersonalizedContentRecommendationsOutput } from "@/ai/flows/personalized-content-recommendations";
 import { FileManager } from "@/components/dashboard/file-manager";
 import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
-import { videoStream as webtorrentStream } from "@/lib/mock-data";
 import { useDashboardStore } from "@/store/use-dashboard-store";
 import { RemoteControlWidget } from "@/components/dashboard/remote-control";
 import { Loader2 } from "lucide-react";
@@ -78,7 +77,7 @@ function RecommendationsLoader() {
 
 
 export default function Home() {
-  const { widgets } = useDashboardStore();
+  const { widgets, torrentStream } = useDashboardStore();
   
   // This state helps prevent hydration mismatches with persisted zustand state.
   const [isMounted, setIsMounted] = useState(false);
@@ -110,7 +109,7 @@ export default function Home() {
             {widgets.notes && <NotesWidget />}
           </div>
           <div className="col-span-12 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
-            {widgets.videoStream && <VideoStreamWidget initialMagnetUri={webtorrentStream.magnetUri} />}
+            {widgets.videoStream && <VideoStreamWidget initialMagnetUri={torrentStream.magnetUri} />}
             {widgets.news && <div className="sm:col-span-2"><NewsWidget /></div>}
             {widgets.weather && <WeatherWidget />}
             {widgets.sports && <SportsWidget />}

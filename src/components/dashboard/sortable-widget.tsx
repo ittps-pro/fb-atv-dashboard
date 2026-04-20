@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
-import type { WidgetVisibility } from '@/store/use-dashboard-store';
+import { useDashboardStore, type WidgetVisibility } from '@/store/use-dashboard-store';
 import { cn } from '@/lib/utils';
 
 // Import all possible widget components
@@ -21,21 +21,7 @@ import { ContentRecommendations } from './content-recommendations';
 import { Skeleton } from '../ui/skeleton';
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import type { PersonalizedContentRecommendationsOutput } from "@/ai/flows/personalized-content-recommendations";
-import { videoStream as webtorrentStream } from "@/lib/mock-data";
 
-
-// A mapping from widget key to component
-const widgetComponentMap: Record<keyof WidgetVisibility, React.ComponentType<any>> = {
-  appLauncher: AppLauncher,
-  fileManager: FileManager,
-  news: NewsWidget,
-  sports: SportsWidget,
-  weather: WeatherWidget,
-  videoStream: () => <VideoStreamWidget initialMagnetUri={webtorrentStream.magnetUri} />,
-  remoteControl: RemoteControlWidget,
-  notes: NotesWidget,
-  recommendations: () => <RecommendationsLoader />,
-};
 
 // This is a temporary copy from page.tsx to avoid prop drilling issues in this example.
 // In a real app, this data fetching logic might be moved to a custom hook or a higher-level component.
@@ -88,6 +74,7 @@ type SortableWidgetProps = {
 };
 
 export function SortableWidget({ id }: SortableWidgetProps) {
+  const { torrentStream } = useDashboardStore();
   const {
     attributes,
     listeners,
@@ -102,6 +89,18 @@ export function SortableWidget({ id }: SortableWidgetProps) {
     transition,
     zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging ? 0.7 : 1,
+  };
+
+  const widgetComponentMap: Record<keyof WidgetVisibility, React.ComponentType<any>> = {
+    appLauncher: AppLauncher,
+    fileManager: FileManager,
+    news: NewsWidget,
+    sports: SportsWidget,
+    weather: WeatherWidget,
+    videoStream: () => <VideoStreamWidget initialMagnetUri={torrentStream.magnetUri} />,
+    remoteControl: RemoteControlWidget,
+    notes: NotesWidget,
+    recommendations: () => <RecommendationsLoader />,
   };
 
   const WidgetComponent = widgetComponentMap[id];

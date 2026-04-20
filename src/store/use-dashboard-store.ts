@@ -4,9 +4,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { z } from 'zod';
-import { apps as defaultApps } from '@/lib/mock-data';
+import { apps as defaultApps, allStreams, videoStream as defaultTorrentStream } from '@/lib/mock-data';
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
-import { type Tunnel, type TunnelStatus } from '@/types/tunnels';
+import { type Tunnel } from '@/types/tunnels';
+import { type Device } from '@/types/devices';
 
 
 const iconMap = {
@@ -49,12 +50,13 @@ const LogEntrySchema = z.object({
   
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
-const DeviceSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  ip: z.string(),
+const StreamSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    url: z.string(),
+    category: z.string(),
 });
-export type Device = z.infer<typeof DeviceSchema>;
+type Stream = z.infer<typeof StreamSchema>;
 
 interface DashboardState {
   apps: AppConfig[];
@@ -62,6 +64,8 @@ interface DashboardState {
   devices: Device[];
   activeDeviceId: string | null;
   tunnels: Tunnel[];
+  streams: Stream[];
+  torrentStream: { name: string; magnetUri: string };
   logs: LogEntry[];
   notesContent: string;
   eventLogOpen: boolean;
@@ -71,7 +75,7 @@ interface DashboardState {
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   setDevices: (devices: Device[]) => void;
-  addDevice: (device: Pick<Device, 'name' | 'ip'>) => void;
+  addDevice: (device: Omit<Device, 'id'>) => void;
   updateDevice: (device: Device) => void;
   removeDevice: (id: string) => void;
   setActiveDeviceId: (id: string | null) => void;
@@ -124,10 +128,12 @@ export const useDashboardStore = create<DashboardState>()(
         'remoteControl',
       ],
       devices: [
-        { id: '1', name: 'Living Room TV', ip: '192.168.1.101'},
-        { id: '2', name: 'Bedroom TV', ip: '192.168.1.102'},
+        { id: '1', name: 'Living Room TV', ip: '192.168.1.101', connectionType: 'direct'},
+        { id: '2', name: 'Bedroom TV', ip: '192.168.1.102', connectionType: 'direct'},
       ],
       tunnels: [],
+      streams: allStreams,
+      torrentStream: defaultTorrentStream,
       activeDeviceId: '1',
       logs: [],
       notesContent: '',

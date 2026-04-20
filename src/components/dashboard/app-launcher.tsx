@@ -19,12 +19,17 @@ export function AppLauncher() {
   const { toast } = useToast();
   const { apps, devices, activeDeviceId, addLog } = useDashboardStore();
   const activeDevice = devices.find(d => d.id === activeDeviceId);
-  const atvDeviceIp = activeDevice?.ip;
 
   const handleLaunch = async (appName: string, packageName: string | undefined) => {
-    if (!atvDeviceIp) {
+    if (!activeDevice) {
       const msg = "No active Android TV device selected.";
       addLog({ message: `App launch failed: ${msg}`, type: 'error' });
+      toast({ title: 'Launch Failed', description: msg, variant: "destructive" });
+      return;
+    }
+     if (activeDevice.connectionType !== 'direct') {
+      const msg = "App Launcher only works with direct device connections for now.";
+      addLog({ message: `App launch failed: ${msg}`, type: 'warning' });
       toast({ title: 'Launch Failed', description: msg, variant: "destructive" });
       return;
     }
@@ -44,7 +49,7 @@ export function AppLauncher() {
       const response = await fetch('/api/launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageName, deviceIp: atvDeviceIp }),
+        body: JSON.stringify({ packageName, deviceIp: activeDevice.ip }),
       });
 
       const result = await response.json();

@@ -27,6 +27,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
   const [downloadSpeed, setDownloadSpeed] = useState(0);
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
     setProgress(0);
     setDownloadSpeed(0);
     setUploadSpeed(0);
+    setStatusText('');
   }
 
   const startStreaming = () => {
@@ -104,6 +106,7 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
     
     stopStreaming(); // Stop any existing stream
     setIsPreparing(true);
+    setStatusText('Fetching torrent metadata...');
     
     toast({
       title: 'Starting Stream',
@@ -111,32 +114,39 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
     });
 
     client.add(source, (torrent: Torrent) => {
-      setIsPreparing(false);
-      setIsStreaming(true);
+      setStatusText('Found torrent! Preparing to stream...');
       
-      toast({
-        title: 'Stream Started',
-        description: `Now streaming: ${torrent.name}`,
+      torrent.on('metadata', () => {
+        setStatusText('Metadata received. Finding peers...');
       });
 
-      const file = torrent.files.find((f) => f.name.endsWith('.mp4') || f.name.endsWith('.mkv') || f.name.endsWith('.webm'));
-      
-      if (file && videoRef.current) {
-        file.appendTo(videoRef.current, { autoplay: true, muted: false });
-        // Make sure video has controls
-        const videoElement = videoRef.current.querySelector('video');
-        if (videoElement) {
-          videoElement.controls = true;
-          videoElement.classList.add('w-full', 'rounded-lg', 'max-h-[500px]');
-        }
-      } else {
+      torrent.on('ready', () => {
+        setIsPreparing(false);
+        setIsStreaming(true);
+        setStatusText(`Streaming ${torrent.name}`);
         toast({
-            title: 'No video file found',
-            description: 'Could not find a playable video file in this torrent.',
-            variant: 'destructive'
+            title: 'Stream Started',
+            description: `Now streaming: ${torrent.name}`,
         });
-        stopStreaming();
-      }
+
+        const file = torrent.files.find((f) => f.name.endsWith('.mp4') || f.name.endsWith('.mkv') || f.name.endsWith('.webm'));
+        
+        if (file && videoRef.current) {
+            file.appendTo(videoRef.current, { autoplay: true, muted: false });
+            const videoElement = videoRef.current.querySelector('video');
+            if (videoElement) {
+            videoElement.controls = true;
+            videoElement.classList.add('w-full', 'rounded-lg', 'max-h-[500px]');
+            }
+        } else {
+            toast({
+                title: 'No video file found',
+                description: 'Could not find a playable video file in this torrent.',
+                variant: 'destructive'
+            });
+            stopStreaming();
+        }
+      });
       
       torrent.on('error', (err) => {
           console.error(err);
@@ -147,6 +157,14 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
         });
         stopStreaming();
       });
+
+       torrent.on('noPeers', (announceType) => {
+        setStatusText(`Stalled. No peers found from ${announceType}.`);
+      });
+       torrent.on('wire', () => {
+        setStatusText(`Connected to peers. Downloading...`);
+      });
+
     });
   };
 
@@ -204,15 +222,26 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
               </Button>
             ) : (
               <Button onClick={startStreaming} disabled={!magnetUri && !torrentFile}>
-                {isPreparing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                <Video className="mr-2 h-4 w-4" />
                 Stream
               </Button>
             )}
         </div>
         
-        {isPreparing && (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+        {(isPreparing || isStreaming) && (
+          <div className="space-y-2 pt-4">
+            {isPreparing && (
+                <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {statusText}
+                </div>
+            )}
+            <Progress value={progress} className="w-full" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Download: {formatSpeed(downloadSpeed)}</span>
+                <span>Upload: {formatSpeed(uploadSpeed)}</span>
+                <span>Progress: {progress.toFixed(2)}%</span>
+            </div>
           </div>
         )}
 
@@ -220,16 +249,6 @@ export function VideoStreamWidget({ initialMagnetUri = '' }: VideoStreamWidgetPr
             {/* The video will be appended here by WebTorrent */}
         </div>
 
-        {isStreaming && (
-            <div className="space-y-2 pt-4">
-                <Progress value={progress} className="w-full" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Download: {formatSpeed(downloadSpeed)}</span>
-                    <span>Upload: {formatSpeed(uploadSpeed)}</span>
-                    <span>Progress: {progress.toFixed(2)}%</span>
-                </div>
-            </div>
-        )}
       </CardContent>
     </Card>
   );
