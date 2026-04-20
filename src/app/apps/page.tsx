@@ -1,127 +1,48 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { useDashboardStore, type AppConfig } from '@/store/use-dashboard-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music, Tv, CheckCircle, XCircle, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, EyeOff, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { iconMap, IconName } from '@/lib/lucide-icons';
+import { AppEditDialog } from '@/components/dashboard/app-edit-dialog';
+import { Separator } from '@/components/ui/separator';
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Youtube,
-  Twitch,
-  Film,
-  Clapperboard,
-  Gamepad2,
-  Music,
-  Tv,
-};
-
-type Status = 'online' | 'offline' | 'issues';
-
-const StatusIndicator = ({ status }: { status: Status }) => {
-    const statusConfig = {
-        online: { icon: CheckCircle, color: 'text-green-500', label: 'Online' },
-        offline: { icon: XCircle, color: 'text-red-500', label: 'Offline' },
-        issues: { icon: AlertTriangle, color: 'text-yellow-500', label: 'Issues Detected' },
-    };
-    const { icon: Icon, color, label } = statusConfig[status];
-    return (
-        <div className={cn("flex items-center gap-2 text-sm", color)}>
-            <Icon className="h-4 w-4" />
-            <span>{label}</span>
-        </div>
-    );
-};
-
-
-const AppStatusCard = ({ app }: { app: AppConfig }) => {
-    const [status, setStatus] = useState<Status>('online');
-    const Icon = iconMap[app.iconName] || Tv;
-
-    useEffect(() => {
-        // Simulate real-time status updates
-        const interval = setInterval(() => {
-            const randomStatus = Math.random();
-            if (randomStatus > 0.9) setStatus('issues');
-            else if (randomStatus > 0.95) setStatus('offline');
-            else setStatus('online');
-        }, 5000 + Math.random() * 5000); // Random interval between 5-10s
-
-        return () => clearInterval(interval);
-    }, []);
+const AppCard = ({ app, onEdit }: { app: AppConfig; onEdit: (app: AppConfig) => void; }) => {
+    const Icon = iconMap[app.iconName as IconName] || iconMap['AppWindow'];
 
     return (
-        <Card className="flex flex-col justify-between">
+        <Card className={cn("flex flex-col justify-between group relative", app.isHidden && "opacity-50")}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold">{app.name}</CardTitle>
+                <CardTitle className="text-lg font-semibold truncate">{app.name}</CardTitle>
                 <Icon className="h-6 w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <StatusIndicator status={status} />
+                 <p className="text-sm text-muted-foreground truncate">{app.packageName}</p>
+                 {app.isHidden && <div className="absolute top-2 left-2 flex items-center gap-1 text-xs text-muted-foreground"><EyeOff className="h-4 w-4" /> Hidden</div>}
             </CardContent>
+            <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => onEdit(app)}>
+                <Pencil className="h-4 w-4"/>
+            </Button>
         </Card>
     );
 }
 
-const DeviceStatusCard = () => {
-    const { devices, activeDeviceId } = useDashboardStore();
-    const activeDevice = devices.find(d => d.id === activeDeviceId);
-    const [status, setStatus] = useState<Status>('offline');
-
-    useEffect(() => {
-        if (!activeDevice?.ip) {
-            setStatus('offline');
-            return;
-        }
-
-        const checkStatus = async () => {
-            try {
-                // This is a mock check. A real implementation would ping the device
-                // or check an ADB connection status endpoint.
-                const response = await fetch('/api/healthcheck/device', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ ip: activeDevice.ip }),
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                
-                if (response.ok) {
-                    setStatus('online');
-                } else {
-                    setStatus('offline');
-                }
-            } catch (error) {
-                setStatus('offline');
-            }
-        };
-
-        checkStatus();
-        const interval = setInterval(checkStatus, 15000); // Check every 15 seconds
-
-        return () => clearInterval(interval);
-    }, [activeDevice]);
-
-
-    return (
-        <Card className="flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-semibold">{activeDevice?.name || 'Device'}</CardTitle>
-                <Tv className="h-6 w-6 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <StatusIndicator status={status} />
-                <p className="text-xs text-muted-foreground mt-1">{activeDevice?.ip || 'No active device'}</p>
-            </CardContent>
-        </Card>
-    )
-}
-
-export default function AppsStatusPage() {
+export default function AppsManagementPage() {
     const { apps, syncApps, addLog } = useDashboardStore();
     const [isSyncing, setIsSyncing] = useState(false);
     const { toast } = useToast();
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [appToEdit, setAppToEdit] = useState<AppConfig | null>(null);
+    
+    const handleEditApp = (app: AppConfig) => {
+        setAppToEdit(app);
+        setIsDialogOpen(true);
+    };
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -143,6 +64,19 @@ export default function AppsStatusPage() {
             setIsSyncing(false);
         }
     };
+    
+    const groupedApps = useMemo(() => {
+        return apps.reduce((acc, app) => {
+            const group = app.group || 'Default';
+            if (!acc[group]) {
+                acc[group] = [];
+            }
+            acc[group].push(app);
+            return acc;
+        }, {} as Record<string, AppConfig[]>);
+    }, [apps]);
+    
+    const sortedGroups = Object.keys(groupedApps).sort();
 
 
     return (
@@ -160,13 +94,27 @@ export default function AppsStatusPage() {
                     Sync Apps from Device
                 </Button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                <DeviceStatusCard />
-                {apps.map(app => (
-                    <AppStatusCard key={app.name} app={app} />
+            
+            <div className="space-y-8">
+                {sortedGroups.map((group, index) => (
+                    <div key={group}>
+                        <h2 className="text-2xl font-bold mb-4">{group}</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {groupedApps[group].map(app => (
+                                <AppCard key={app.packageName} app={app} onEdit={handleEditApp} />
+                            ))}
+                        </div>
+                        {index < sortedGroups.length - 1 && <Separator className="my-8" />}
+                    </div>
                 ))}
             </div>
+
           </main>
+          <AppEditDialog 
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            appToEdit={appToEdit}
+          />
         </>
     );
 }

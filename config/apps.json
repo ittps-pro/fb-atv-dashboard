@@ -1,32 +1,79 @@
 [
   {
-    "name": "YouTube",
-    "iconName": "Youtube",
-    "packageName": "com.google.android.youtube.tv"
+    "name": "ipn",
+    "iconName": "Network",
+    "packageName": "com.tailscale.ipn",
+    "group": "System",
+    "isHidden": false
   },
   {
-    "name": "Twitch",
-    "iconName": "Twitch",
-    "packageName": "tv.twitch.android.app"
-  },
-  {
-    "name": "Plex",
-    "iconName": "Film",
-    "packageName": "com.plexapp.android"
-  },
-  {
-    "name": "Movies",
-    "iconName": "Clapperboard",
-    "packageName": "com.google.android.videos"
-  },
-  {
-    "name": "Games",
+    "name": "Play",
     "iconName": "Gamepad2",
-    "packageName": "com.google.android.play.games"
+    "packageName": "ru.more.play",
+    "group": "Media",
+    "isHidden": false
   },
   {
-    "name": "Music",
-    "iconName": "Music",
-    "packageName": "com.spotify.tv.android"
+    "name": "IVI",
+    "iconName": "Film",
+    "packageName": "ru.ivi.client",
+    "group": "Media",
+    "isHidden": false
+  },
+  {
+    "name": "SAI",
+    "iconName": "Download",
+    "packageName": "com.aefyr.sai",
+    "group": "System",
+    "isHidden": false
+  },
+  {
+    "name": "Rutube",
+    "iconName": "Youtube",
+    "packageName": "ru.rutube.app",
+    "group": "Media",
+    "isHidden": false
+  },
+  {
+    "name": "VLC",
+    "iconName": "Film",
+    "packageName": "org.videolan.vlc",
+    "group": "Media",
+    "isHidden": false
+  },
+  {
+    "name": "MiXplorer",
+    "iconName": "Folder",
+    "packageName": "com.mixplorer",
+    "group": "System",
+    "isHidden": false
+  },
+  {
+    "name": "VK Video",
+    "iconName": "Tv",
+    "packageName": "com.vk.tv",
+    "group": "Media",
+    "isHidden": false
+  },
+  {
+    "name": "Termux",
+    "iconName": "Terminal",
+    "packageName": "com.termux",
+    "group": "System",
+    "isHidden": false
+  },
+  {
+    "name": "Lampa",
+    "iconName": "Clapperboard",
+    "packageName": "top.rootu.lampa",
+    "group": "Media",
+    "isHidden": false
+  },
+  {
+    "name": "Latin IME",
+    "iconName": "Settings",
+    "packageName": "com.google.android.inputmethod.latin",
+    "group": "System",
+    "isHidden": true
   }
 ]

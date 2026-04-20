@@ -13,10 +13,8 @@
   {
     "id": "2",
     "name": "Work VPN",
-    "protocol": "wireguard",
+    "protocol": "vless",
     "status": "disconnected",
-    "config": {
-      "interfaceName": "wg0"
-    }
+    "config": {}
   }
 ]

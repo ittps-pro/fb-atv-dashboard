@@ -1,8 +1,9 @@
 [
   {
     "id": "2",
-    "name": "Bedroom TV",
-    "ip": "192.168.1.102",
-    "connectionType": "direct"
+    "name": "TV1",
+    "ip": "89.179.119.77",
+    "connectionType": "direct",
+    "port": 32555
   }
 ]

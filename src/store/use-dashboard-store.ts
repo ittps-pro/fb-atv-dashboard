@@ -31,6 +31,7 @@ interface DashboardState {
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
   
   fetchApps: () => Promise<void>;
+  updateApp: (app: Partial<AppConfig> & { packageName: string }) => Promise<void>;
   syncApps: () => Promise<void>;
 
   fetchDevices: () => Promise<void>;
@@ -134,6 +135,16 @@ export const useDashboardStore = create<DashboardState>()(
           console.error("Failed to fetch apps:", error);
           get().addLog({ message: "Could not load apps from server.", type: 'error' });
         }
+      },
+      
+      updateApp: async (app) => {
+        if (!app.packageName) return;
+        await fetch(`/api/apps/${encodeURIComponent(app.packageName)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(app),
+        });
+        await get().fetchApps();
       },
 
       syncApps: async () => {
