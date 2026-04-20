@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -117,7 +116,7 @@ export function TunnelDialog({ open, onOpenChange, tunnelToEdit }: TunnelDialogP
     
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Tunnel' : 'Add New Tunnel'}</DialogTitle>
                     <DialogDescription>

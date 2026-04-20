@@ -308,7 +308,7 @@ export function DeviceConnectionWizard({ open, onOpenChange, deviceToEdit }: Dev
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-[450px] sm:max-w-lg">
+            <SheetContent className="w-[450px] sm:max-w-lg overflow-y-auto">
                 <SheetHeader className="mb-6">
                     <SheetTitle>{deviceToEdit ? 'Edit Device' : 'New Device Wizard'}</SheetTitle>
                     <SheetDescription>
