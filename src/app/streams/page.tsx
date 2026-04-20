@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlayCircle, Plus, Pencil, Trash2, Network } from "lucide-react";
+import { PlayCircle, Plus, Pencil, Trash2, Network, Tv } from "lucide-react";
 import { VideoPlayer } from "@/components/dashboard/video-player";
 import { Separator } from "@/components/ui/separator";
 import { VideoStreamWidget } from "@/components/dashboard/video-stream-widget";
@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export default function StreamsPage() {
-    const { streams, torrentStream, removeStream, addLog, tunnels } = useDashboardStore();
+    const { streams, torrentStream, removeStream, addLog, tunnels, triggerAction, playStreamOnDevice } = useDashboardStore();
     const { toast } = useToast();
     
     const [selectedStream, setSelectedStream] = useState(streams.length > 0 ? streams[0] : { id: 'placeholder', name: 'No Stream Selected', url: '', category: ''});
@@ -88,6 +88,30 @@ export default function StreamsPage() {
             }
         }
         setSelectedStream(stream);
+    };
+
+    const handlePlayOnDevice = async (stream: Stream) => {
+        if (stream.actionId) {
+            addLog({ message: `Executing bound action for stream: ${stream.name}`, type: 'info' });
+            try {
+                const result = await triggerAction(stream.actionId, { streamUrl: stream.url });
+                toast({ title: "Action Triggered", description: result.message });
+                addLog({ message: `Action "${stream.name}" executed.`, type: 'info' });
+            } catch (error: any) {
+                toast({ title: 'Action Failed', description: error.message, variant: 'destructive' });
+                addLog({ message: `Failed to execute action for ${stream.name}: ${error.message}`, type: 'error' });
+            }
+        } else {
+            addLog({ message: `Playing stream on device: ${stream.name}`, type: 'info' });
+            try {
+                const result = await playStreamOnDevice(stream.url);
+                toast({ title: 'Sent to Device', description: result.message });
+                addLog({ message: `Sent stream "${stream.name}" to device.`, type: 'info' });
+            } catch (error: any) {
+                toast({ title: 'Failed to Play', description: error.message, variant: 'destructive' });
+                addLog({ message: `Failed to play stream ${stream.name} on device: ${error.message}`, type: 'error' });
+            }
+        }
     };
 
 
@@ -154,6 +178,7 @@ export default function StreamsPage() {
                                                                     </div>
                                                                 </Button>
                                                                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Play on Device" onClick={() => handlePlayOnDevice(stream)}><Tv className="h-4 w-4" /></Button>
                                                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditStream(stream)}><Pencil className="h-4 w-4" /></Button>
                                                                     <AlertDialog>
                                                                         <AlertDialogTrigger asChild>

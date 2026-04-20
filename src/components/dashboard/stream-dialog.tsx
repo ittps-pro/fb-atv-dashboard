@@ -30,24 +30,25 @@ interface StreamDialogProps {
 }
 
 export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogProps) {
-    const { addStream, updateStream, addLog, tunnels } = useDashboardStore();
+    const { addStream, updateStream, addLog, tunnels, actions, fetchActions } = useDashboardStore();
     const { toast } = useToast();
     const isEditing = !!streamToEdit;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: { name: "", url: "", category: "VOD", tunnelId: undefined },
+        defaultValues: { name: "", url: "", category: "VOD", tunnelId: undefined, actionId: undefined },
     });
 
     useEffect(() => {
         if (open) {
+            fetchActions();
             if (streamToEdit) {
                 form.reset(streamToEdit);
             } else {
-                form.reset({ name: "", url: "", category: "VOD", tunnelId: undefined });
+                form.reset({ name: "", url: "", category: "VOD", tunnelId: undefined, actionId: undefined });
             }
         }
-    }, [open, streamToEdit, form]);
+    }, [open, streamToEdit, form, fetchActions]);
 
     const onSubmit = (data: z.infer<typeof formSchema>) => {
         if (isEditing && streamToEdit) {
@@ -88,17 +89,42 @@ export function StreamDialog({ open, onOpenChange, streamToEdit }: StreamDialogP
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Route via Tunnel (Optional)</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select onValueChange={(value) => field.onChange(value === 'null' ? undefined : value)} value={field.value ?? 'null'}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="None (Direct Connection)" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="none">None (Direct Connection)</SelectItem>
+                                  <SelectItem value="null">None (Direct Connection)</SelectItem>
                                   {tunnels.map((tunnel) => (
                                     <SelectItem key={tunnel.id} value={tunnel.id}>
                                       {tunnel.name} ({tunnel.protocol})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="actionId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bound Action (Optional)</FormLabel>
+                              <Select onValueChange={(value) => field.onChange(value === 'null' ? undefined : value)} value={field.value ?? 'null'}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="None (Default: Play via VLC)" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="null">None (Default: Play via VLC)</SelectItem>
+                                  {actions.map((action) => (
+                                    <SelectItem key={action.id} value={action.id}>
+                                      {action.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

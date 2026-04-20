@@ -23,7 +23,7 @@ async function getDevices(): Promise<Device[]> {
 }
 
 export async function POST(request: Request) {
-    const { actionId, deviceId } = await request.json();
+    const { actionId, deviceId, context } = await request.json();
 
     if (!actionId || !deviceId) {
         return NextResponse.json({ error: 'Action ID and Device ID are required' }, { status: 400 });
@@ -60,7 +60,11 @@ export async function POST(request: Request) {
             command = `adb -s ${deviceAddress} shell monkey -p ${action.payload.packageName} -c android.intent.category.LAUNCHER 1`;
             resultMessage = `Launch command sent for ${action.payload.packageName}.`;
         } else if (action.type === 'shell-command') {
-            const escapedCommand = action.payload.command.replace(/"/g, '\\"');
+            let commandToExecute = action.payload.command;
+            if (context?.streamUrl) {
+                commandToExecute = commandToExecute.replace(/\{URL\}/g, context.streamUrl);
+            }
+            const escapedCommand = commandToExecute.replace(/"/g, '\\"');
             command = `adb -s ${deviceAddress} shell "${escapedCommand}"`;
             resultMessage = 'Shell command executed.';
         } else {

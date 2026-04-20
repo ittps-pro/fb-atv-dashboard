@@ -6,6 +6,7 @@ export const StreamSchema = z.object({
   url: z.string().url({ message: "Please enter a valid URL." }),
   category: z.string().min(1, "Category is required"),
   tunnelId: z.string().optional(),
+  actionId: z.string().optional(),
 });
 
 export type Stream = z.infer<typeof StreamSchema>;

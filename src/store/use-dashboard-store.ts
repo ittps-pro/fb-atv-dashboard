@@ -63,11 +63,12 @@ interface DashboardState {
   addAction: (action: Omit<DashboardAction, 'id'>) => Promise<void>;
   updateAction: (action: DashboardAction) => Promise<void>;
   removeAction: (id: string) => Promise<void>;
-  triggerAction: (id: string) => Promise<{success: boolean, message: string, stdout?: string, stderr?: string}>;
+  triggerAction: (id: string, context?: { streamUrl?: string }) => Promise<{success: boolean, message: string, stdout?: string, stderr?: string}>;
 
   addStream: (stream: Omit<Stream, 'id'>) => void;
   updateStream: (stream: Stream) => void;
   removeStream: (id: string) => void;
+  playStreamOnDevice: (streamUrl: string) => Promise<{success: boolean, message: string}>;
 
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setNotesContent: (content: string) => void;
@@ -391,7 +392,7 @@ export const useDashboardStore = create<DashboardState>()(
         await fetch(`/api/actions/${id}`, { method: 'DELETE' });
         await get().fetchActions();
       },
-      triggerAction: async (id) => {
+      triggerAction: async (id, context) => {
         const { activeDeviceId } = get();
         if (!activeDeviceId) {
           throw new Error('No active device selected.');
@@ -399,7 +400,7 @@ export const useDashboardStore = create<DashboardState>()(
         const response = await fetch('/api/actions/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ actionId: id, deviceId: activeDeviceId }),
+            body: JSON.stringify({ actionId: id, deviceId: activeDeviceId, context }),
         });
         const result = await response.json();
         if (!response.ok) {
@@ -417,6 +418,22 @@ export const useDashboardStore = create<DashboardState>()(
       removeStream: (id) => set((state) => ({
         streams: state.streams.filter(s => s.id !== id)
       })),
+      playStreamOnDevice: async (streamUrl: string) => {
+        const { activeDeviceId } = get();
+        if (!activeDeviceId) {
+            throw new Error('No active device selected.');
+        }
+        const response = await fetch('/api/streams/play-on-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ streamUrl, deviceId: activeDeviceId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.details || result.error || 'Failed to play stream on device.');
+        }
+        return result;
+      },
 
       addLog: (log) => set((state) => ({
         logs: [
