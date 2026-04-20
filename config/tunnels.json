@@ -1,0 +1,23 @@
+
+[
+  {
+    "id": "1",
+    "name": "My SSH Server",
+    "protocol": "ssh",
+    "status": "disconnected",
+    "config": {
+      "host": "192.168.1.50",
+      "port": 22,
+      "username": "dev"
+    }
+  },
+  {
+    "id": "2",
+    "name": "Work VPN",
+    "protocol": "wireguard",
+    "status": "disconnected",
+    "config": {
+      "interfaceName": "wg0"
+    }
+  }
+]

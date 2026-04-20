@@ -1,6 +1,6 @@
+
 "use client";
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Signal, SignalHigh, SignalLow, Server, Loader2, Pencil, Trash2 } from "lucide-react";
-import { useDashboardStore, type Tunnel } from "@/store/use-dashboard-store";
+import { useDashboardStore } from "@/store/use-dashboard-store";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import type { Tunnel } from '@/types/tunnels';
 
 interface TunnelCardProps {
     tunnel: Tunnel;
@@ -42,39 +43,30 @@ const statusConfig: Record<Tunnel['status'], { label: string; color: string; ico
 }
 
 export function TunnelCard({ tunnel, onEdit }: TunnelCardProps) {
-    const { removeTunnel, setTunnelStatus, addLog } = useDashboardStore();
+    const { removeTunnel, connectTunnel, disconnectTunnel, addLog } = useDashboardStore();
     const { toast } = useToast();
     const Icon = protocolIcons[tunnel.protocol] || Server;
     
     const handleConnectToggle = async () => {
         const isConnecting = tunnel.status === 'connected';
-        const newStatus = isConnecting ? 'disconnecting' : 'connecting';
-        const endpoint = isConnecting ? '/api/tunnels/disconnect' : '/api/tunnels/connect';
         const actionText = isConnecting ? 'Disconnecting' : 'Connecting';
 
-        setTunnelStatus(tunnel.id, newStatus);
         addLog({ message: `${actionText} tunnel: ${tunnel.name}`, type: 'info' });
-
+        
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: JSON.stringify({ tunnelId: tunnel.id }),
-                headers: { 'Content-Type': 'application/json' },
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'API request failed');
-
-            setTunnelStatus(tunnel.id, isConnecting ? 'disconnected' : 'connected');
-            addLog({ message: `Tunnel ${tunnel.name} ${isConnecting ? 'disconnected' : 'connected'}.`, type: 'info' });
+            if (isConnecting) {
+                await disconnectTunnel(tunnel.id);
+            } else {
+                await connectTunnel(tunnel.id);
+            }
         } catch (error: any) {
-            setTunnelStatus(tunnel.id, 'error');
-            addLog({ message: `Failed to ${isConnecting ? 'disconnect' : 'connect'} tunnel ${tunnel.name}: ${error.message}`, type: 'error' });
+            addLog({ message: `Failed to ${actionText} tunnel ${tunnel.name}: ${error.message}`, type: 'error' });
             toast({ title: 'Operation Failed', description: error.message, variant: 'destructive' });
         }
     };
     
-    const handleDelete = () => {
-        removeTunnel(tunnel.id);
+    const handleDelete = async () => {
+        await removeTunnel(tunnel.id);
         toast({ title: "Tunnel Removed", description: `${tunnel.name} has been deleted.` });
         addLog({ message: `Tunnel removed: ${tunnel.name}`, type: 'info' });
     }

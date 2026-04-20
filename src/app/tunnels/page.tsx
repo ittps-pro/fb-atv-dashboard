@@ -1,18 +1,28 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { useDashboardStore } from '@/store/use-dashboard-store';
 import { TunnelDialog } from '@/components/dashboard/tunnel-dialog';
 import { TunnelCard } from '@/components/dashboard/tunnel-card';
-import type { Tunnel } from '@/store/use-dashboard-store';
+import type { Tunnel } from '@/types/tunnels';
 
 export default function TunnelsPage() {
-    const { tunnels } = useDashboardStore();
+    const { tunnels, fetchTunnels } = useDashboardStore();
+    const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [tunnelToEdit, setTunnelToEdit] = useState<Tunnel | null>(null);
+
+    useEffect(() => {
+        async function loadTunnels() {
+            await fetchTunnels();
+            setIsLoading(false);
+        }
+        loadTunnels();
+    }, [fetchTunnels]);
     
     const handleAddTunnel = () => {
         setTunnelToEdit(null);
@@ -24,6 +34,15 @@ export default function TunnelsPage() {
         setIsDialogOpen(true);
     }
     
+    if (isLoading) {
+        return (
+            <main className="relative z-10 p-4 md:p-6 space-y-8 h-screen flex flex-col items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                <p className="text-muted-foreground mt-4">Loading Tunnels...</p>
+            </main>
+        )
+    }
+
     return (
         <>
             <div className="absolute inset-0 h-full w-full bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-10 dark:bg-[radial-gradient(hsl(var(--accent))_0.5px,transparent_0.5px)]"></div>

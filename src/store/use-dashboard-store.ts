@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from 'zustand';
@@ -5,6 +6,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { z } from 'zod';
 import { apps as defaultApps } from '@/lib/mock-data';
 import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-react';
+import { type Tunnel, type TunnelStatus } from '@/types/tunnels';
+
 
 const iconMap = {
   Youtube,
@@ -53,22 +56,6 @@ const DeviceSchema = z.object({
 });
 export type Device = z.infer<typeof DeviceSchema>;
 
-const TunnelProtocolSchema = z.enum(['ssh', 'wireguard', 'openvpn', 'vless', 'sstp', 'openconnect']);
-export type TunnelProtocol = z.infer<typeof TunnelProtocolSchema>;
-
-const TunnelStatusSchema = z.enum(['connected', 'disconnected', 'connecting', 'disconnecting', 'error']);
-export type TunnelStatus = z.infer<typeof TunnelStatusSchema>;
-
-export const TunnelSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  protocol: TunnelProtocolSchema,
-  status: TunnelStatusSchema,
-  config: z.record(z.any()),
-});
-export type Tunnel = z.infer<typeof TunnelSchema>;
-
-
 interface DashboardState {
   apps: AppConfig[];
   widgets: WidgetVisibility;
@@ -87,10 +74,12 @@ interface DashboardState {
   updateDevice: (device: Device) => void;
   removeDevice: (id: string) => void;
   setActiveDeviceId: (id: string | null) => void;
-  addTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'>) => void;
-  updateTunnel: (tunnel: Omit<Tunnel, 'status'>) => void;
-  removeTunnel: (id: string) => void;
-  setTunnelStatus: (id: string, status: TunnelStatus) => void;
+  fetchTunnels: () => Promise<void>;
+  addTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'>) => Promise<void>;
+  updateTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'> & { id: string }) => Promise<void>;
+  removeTunnel: (id: string) => Promise<void>;
+  connectTunnel: (id: string) => Promise<void>;
+  disconnectTunnel: (id: string) => Promise<void>;
   addLog: (log: Omit<LogEntry, 'id' | 'timestamp'>) => void;
   setNotesContent: (content: string) => void;
   setEventLogOpen: (open: boolean) => void;
@@ -135,22 +124,7 @@ export const useDashboardStore = create<DashboardState>()(
         { id: '1', name: 'Living Room TV', ip: '192.168.1.101'},
         { id: '2', name: 'Bedroom TV', ip: '192.168.1.102'},
       ],
-      tunnels: [
-        {
-          id: '1',
-          name: 'My SSH Server',
-          protocol: 'ssh',
-          status: 'disconnected',
-          config: { host: '192.168.1.50', port: 22, username: 'dev' },
-        },
-        {
-          id: '2',
-          name: 'Work VPN',
-          protocol: 'wireguard',
-          status: 'disconnected',
-          config: { interfaceName: 'wg0' },
-        }
-      ],
+      tunnels: [],
       activeDeviceId: '1',
       logs: [],
       notesContent: '',
@@ -183,24 +157,63 @@ export const useDashboardStore = create<DashboardState>()(
         return { devices: newDevices, activeDeviceId: newActiveId };
       }),
       setActiveDeviceId: (id) => set({ activeDeviceId: id }),
-      addTunnel: (tunnel) => set((state) => ({
-        tunnels: [...state.tunnels, { ...tunnel, id: new Date().toISOString(), status: 'disconnected' }]
-      })),
-      updateTunnel: (tunnel) => set((state) => ({
-        tunnels: state.tunnels.map(t => t.id === tunnel.id ? { ...t, status: t.status, ...tunnel } : t)
-      })),
-      removeTunnel: (id) => set((state) => ({
-        tunnels: state.tunnels.filter(t => t.id !== id)
-      })),
-      setTunnelStatus: (id, status) => set((state) => ({
-        tunnels: state.tunnels.map(t => t.id === id ? { ...t, status } : t)
-      })),
+      
+      fetchTunnels: async () => {
+        try {
+          const response = await fetch('/api/tunnels');
+          if (response.ok) {
+            const tunnels = await response.json();
+            set({ tunnels });
+          }
+        } catch (error) {
+          console.error("Failed to fetch tunnels:", error);
+        }
+      },
+      addTunnel: async (tunnel) => {
+        await fetch('/api/tunnels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tunnel),
+        });
+        await get().fetchTunnels();
+      },
+      updateTunnel: async (tunnel) => {
+        await fetch(`/api/tunnels/${tunnel.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tunnel),
+        });
+        await get().fetchTunnels();
+      },
+      removeTunnel: async (id) => {
+        await fetch(`/api/tunnels/${id}`, { method: 'DELETE' });
+        await get().fetchTunnels();
+      },
+      connectTunnel: async (id) => {
+        set(state => ({ tunnels: state.tunnels.map(t => t.id === id ? { ...t, status: 'connecting' } : t) }));
+        await fetch('/api/tunnels/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tunnelId: id }),
+        });
+        await get().fetchTunnels();
+      },
+      disconnectTunnel: async (id) => {
+        set(state => ({ tunnels: state.tunnels.map(t => t.id === id ? { ...t, status: 'disconnecting' } : t) }));
+        await fetch('/api/tunnels/disconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tunnelId: id }),
+        });
+        await get().fetchTunnels();
+      },
+
       addLog: (log) => set((state) => ({
         logs: [
             { 
                 ...log, 
                 id: new Date().toISOString() + Math.random(), 
-                timestamp: new Date().toLocaleTimeString() 
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             }, 
             ...state.logs
         ].slice(0, 100) // Keep last 100 logs
@@ -214,6 +227,10 @@ export const useDashboardStore = create<DashboardState>()(
     {
       name: 'dashboard-storage',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(([key]) => !['tunnels'].includes(key))
+        ),
     }
   )
 );

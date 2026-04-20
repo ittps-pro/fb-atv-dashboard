@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useDashboardStore, type Tunnel, TunnelSchema, type TunnelProtocol } from '@/store/use-dashboard-store';
+import { useDashboardStore } from '@/store/use-dashboard-store';
+import { type Tunnel, type TunnelProtocol } from '@/types/tunnels';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +32,7 @@ const SshConfigSchema = z.object({
 // A base schema for the form
 const BaseTunnelFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  protocol: TunnelSchema.shape.protocol,
+  protocol: z.enum(['ssh', 'wireguard', 'openvpn', 'vless', 'sstp', 'openconnect']),
 });
 
 // Use discriminated union for protocol-specific configs
@@ -132,7 +134,7 @@ export function TunnelDialog({ open, onOpenChange, tunnelToEdit }: TunnelDialogP
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select a protocol" /></SelectTrigger></FormControl>
                                 <SelectContent>
-                                    {TunnelSchema.shape.protocol.options.map((p: string) => <SelectItem key={p} value={p}>{p.toUpperCase()}</SelectItem>)}
+                                    {(['ssh', 'wireguard', 'openvpn', 'vless', 'sstp', 'openconnect'] as TunnelProtocol[]).map((p) => <SelectItem key={p} value={p}>{p.toUpperCase()}</SelectItem>)}
                                 </SelectContent>
                                 </Select>
                             <FormMessage /></FormItem>
