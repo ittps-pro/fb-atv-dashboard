@@ -3,7 +3,7 @@
     "id": "1",
     "name": "My SSH Server",
     "protocol": "ssh",
-    "status": "connected",
+    "status": "disconnected",
     "config": {
       "host": "192.168.1.50",
       "port": 22,
@@ -14,7 +14,7 @@
     "id": "2",
     "name": "Work VPN",
     "protocol": "wireguard",
-    "status": "connected",
+    "status": "disconnected",
     "config": {
       "interfaceName": "wg0"
     }

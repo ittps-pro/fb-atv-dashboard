@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { executeCommand } from '@/lib/adb';
-import { writeFile, unlink } from 'fs/promises';
-import { tmpdir } from 'os';
+import { writeFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
 
 /**
@@ -31,8 +30,9 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Using os.tmpdir() for cross-platform compatibility
-    const tempDir = tmpdir();
+    // Using a local .tmp directory for cross-platform compatibility
+    const tempDir = join(process.cwd(), '.tmp');
+    await mkdir(tempDir, { recursive: true });
     tempPath = join(tempDir, file.name);
     
     console.log(`Writing file to temporary path: ${tempPath}`);
