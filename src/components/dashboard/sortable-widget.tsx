@@ -124,7 +124,7 @@ export function SortableWidget({ id }: SortableWidgetProps) {
             <div
                 {...attributes}
                 {...listeners}
-                className="absolute top-2 right-2 p-1.5 bg-background/50 border rounded-md cursor-grab active:cursor-grabbing opacity-0 group-hover/widget:opacity-100 transition-opacity z-10"
+                className="absolute top-2 right-2 p-1.5 bg-secondary border rounded-md cursor-grab active:cursor-grabbing transition-opacity z-10"
             >
                 <GripVertical className="h-5 w-5 text-muted-foreground" />
             </div>
