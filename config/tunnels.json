@@ -18,5 +18,16 @@
     "config": {
       "interfaceName": "wg0"
     }
+  },
+  {
+    "id": "2026-04-20T05:21:23.394Z0.4750921806890003",
+    "name": "rrr",
+    "protocol": "ssh",
+    "status": "connected",
+    "config": {
+      "host": "89.179.119.77",
+      "port": 32022,
+      "username": "tpa"
+    }
   }
 ]
