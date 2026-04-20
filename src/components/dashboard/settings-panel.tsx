@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboardStore } from '@/store/use-dashboard-store';
 import { type Device } from '@/types/devices';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -35,10 +35,15 @@ export function SettingsPanel() {
     addLog,
     theme,
     setTheme,
+    fetchDevices,
   } = useDashboardStore();
   
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<Device | null>(null);
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   const handleAddDeviceClick = () => {
     setDeviceToEdit(null);
@@ -48,6 +53,11 @@ export function SettingsPanel() {
   const handleEditDeviceClick = (device: Device) => {
     setDeviceToEdit(device);
     setIsWizardOpen(true);
+  }
+
+  const handleDeleteDevice = async (device: Device) => {
+    await removeDevice(device.id);
+    addLog({ message: `Device removed: ${device.name}`, type: 'info' });
   }
 
   return (
@@ -144,10 +154,7 @@ export function SettingsPanel() {
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => {
-                                            removeDevice(device.id);
-                                            addLog({ message: `Device removed: ${device.name}`, type: 'info' });
-                                        }}>Delete</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleDeleteDevice(device)}>Delete</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>

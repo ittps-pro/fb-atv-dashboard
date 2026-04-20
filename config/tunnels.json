@@ -14,7 +14,7 @@
     "id": "2",
     "name": "Work VPN",
     "protocol": "wireguard",
-    "status": "disconnected",
+    "status": "connected",
     "config": {
       "interfaceName": "wg0"
     }

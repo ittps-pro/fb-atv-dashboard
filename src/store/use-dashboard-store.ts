@@ -74,11 +74,13 @@ interface DashboardState {
   theme: string;
   setApps: (apps: AppConfig[]) => void;
   toggleWidgetVisibility: (widget: keyof WidgetVisibility) => void;
-  setDevices: (devices: Device[]) => void;
-  addDevice: (device: Omit<Device, 'id'>) => void;
-  updateDevice: (device: Device) => void;
-  removeDevice: (id: string) => void;
+  
+  fetchDevices: () => Promise<void>;
+  addDevice: (device: Omit<Device, 'id'>) => Promise<void>;
+  updateDevice: (device: Device) => Promise<void>;
+  removeDevice: (id: string) => Promise<void>;
   setActiveDeviceId: (id: string | null) => void;
+
   fetchTunnels: () => Promise<void>;
   addTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'>) => Promise<void>;
   updateTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'> & { id: string }) => Promise<void>;
@@ -127,14 +129,11 @@ export const useDashboardStore = create<DashboardState>()(
         'sports',
         'remoteControl',
       ],
-      devices: [
-        { id: '1', name: 'Living Room TV', ip: '192.168.1.101', connectionType: 'direct'},
-        { id: '2', name: 'Bedroom TV', ip: '192.168.1.102', connectionType: 'direct'},
-      ],
+      devices: [],
       tunnels: [],
       streams: allStreams,
       torrentStream: defaultTorrentStream,
-      activeDeviceId: '1',
+      activeDeviceId: null,
       logs: [],
       notesContent: '',
       eventLogOpen: false,
@@ -147,25 +146,46 @@ export const useDashboardStore = create<DashboardState>()(
           [widget]: !state.widgets[widget],
         },
       })),
-      setDevices: (devices) => set({ devices }),
-      addDevice: (device) => {
-        const newDevice = { ...device, id: new Date().toISOString() + Math.random() };
-        set((state) => ({ devices: [...state.devices, newDevice] }));
-        if (get().devices.length === 1) {
-            set({ activeDeviceId: newDevice.id });
+      
+      fetchDevices: async () => {
+        try {
+          const response = await fetch('/api/devices');
+          if (response.ok) {
+            const devices = await response.json();
+            set({ devices });
+             if (!get().activeDeviceId && devices.length > 0) {
+              set({ activeDeviceId: devices[0].id });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch devices:", error);
         }
       },
-      updateDevice: (device) => set((state) => ({
-        devices: state.devices.map(d => d.id === device.id ? device : d)
-      })),
-      removeDevice: (id) => set((state) => {
-        const newDevices = state.devices.filter(d => d.id !== id);
-        let newActiveId = state.activeDeviceId;
-        if (state.activeDeviceId === id) {
-          newActiveId = newDevices.length > 0 ? newDevices[0].id : null;
+      addDevice: async (device) => {
+        await fetch('/api/devices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(device),
+        });
+        await get().fetchDevices();
+      },
+      updateDevice: async (device) => {
+        await fetch(`/api/devices/${device.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(device),
+        });
+        await get().fetchDevices();
+      },
+      removeDevice: async (id) => {
+        await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+        const currentActive = get().activeDeviceId;
+        if (currentActive === id) {
+            const remainingDevices = get().devices.filter(d => d.id !== id);
+            set({ activeDeviceId: remainingDevices.length > 0 ? remainingDevices[0].id : null })
         }
-        return { devices: newDevices, activeDeviceId: newActiveId };
-      }),
+        await get().fetchDevices();
+      },
       setActiveDeviceId: (id) => set({ activeDeviceId: id }),
       
       fetchTunnels: async () => {
@@ -241,7 +261,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
         ),
     }
   )
