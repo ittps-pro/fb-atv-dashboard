@@ -22,6 +22,9 @@ import { SortableWidget } from '@/components/dashboard/sortable-widget';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { layoutTemplates } from '@/lib/layout-templates';
+import { Label } from '@/components/ui/label';
 
 export default function LayoutEditorPage() {
   const { fullscreenLayout, widgets, setFullscreenLayout } = useDashboardStore();
@@ -33,7 +36,17 @@ export default function LayoutEditorPage() {
   useEffect(() => {
     // Filter layout by visibility and set initial order
     const visibleLayout = fullscreenLayout.filter(id => widgets[id]);
-    setOrderedWidgets(visibleLayout);
+    const allVisibleWidgets = (Object.keys(widgets) as (keyof WidgetVisibility)[]).filter(id => widgets[id]);
+
+    // Ensure all visible widgets are in the layout, even if new ones were enabled
+    const newLayout = [...visibleLayout];
+    allVisibleWidgets.forEach(id => {
+      if (!newLayout.includes(id)) {
+        newLayout.push(id);
+      }
+    });
+
+    setOrderedWidgets(newLayout);
     setIsMounted(true);
   }, [fullscreenLayout, widgets]);
   
@@ -64,6 +77,17 @@ export default function LayoutEditorPage() {
     });
   }
 
+  const handleTemplateChange = (templateId: string) => {
+    const template = layoutTemplates.find(t => t.id === templateId);
+    if (template) {
+        setFullscreenLayout(template.layout);
+        toast({
+            title: "Template Applied",
+            description: `The "${template.name}" layout has been applied.`
+        });
+    }
+  }
+
   if (!isMounted) {
     return (
       <div className="min-h-screen w-full bg-background flex items-center justify-center">
@@ -79,7 +103,22 @@ export default function LayoutEditorPage() {
       <main className="relative z-10 p-4 md:p-6 space-y-8">
         <div className="flex justify-between items-center">
             <DashboardHeader />
-            <Button onClick={handleSaveChanges}>Save Layout</Button>
+            <div className="flex items-center gap-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="layout-template">Grid Template</Label>
+                <Select onValueChange={handleTemplateChange}>
+                  <SelectTrigger id="layout-template" className="w-[180px]">
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {layoutTemplates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleSaveChanges}>Save Layout</Button>
+            </div>
         </div>
         
         <p className="text-muted-foreground">Drag and drop widgets to reorder them. Your layout is persisted automatically.</p>
