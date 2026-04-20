@@ -9,6 +9,7 @@ import { Youtube, Twitch, Film, Clapperboard, Gamepad2, Music } from 'lucide-rea
 import { type Tunnel } from '@/types/tunnels';
 import { type Device } from '@/types/devices';
 import { type Stream } from '@/types/streams';
+import { type Storage } from '@/types/storage';
 
 
 const iconMap = {
@@ -57,6 +58,7 @@ interface DashboardState {
   devices: Device[];
   activeDeviceId: string | null;
   tunnels: Tunnel[];
+  storages: Storage[];
   streams: Stream[];
   torrentStream: { name: string; magnetUri: string };
   logs: LogEntry[];
@@ -80,6 +82,13 @@ interface DashboardState {
   removeTunnel: (id: string) => Promise<void>;
   connectTunnel: (id: string) => Promise<void>;
   disconnectTunnel: (id: string) => Promise<void>;
+  
+  fetchStorages: () => Promise<void>;
+  addStorage: (storage: Omit<Storage, 'id' | 'status'>) => Promise<void>;
+  updateStorage: (storage: Omit<Storage, 'id' | 'status'> & { id: string }) => Promise<void>;
+  removeStorage: (id: string) => Promise<void>;
+  mountStorage: (id: string) => Promise<void>;
+  unmountStorage: (id: string) => Promise<void>;
 
   addStream: (stream: Omit<Stream, 'id'>) => void;
   updateStream: (stream: Stream) => void;
@@ -129,6 +138,7 @@ export const useDashboardStore = create<DashboardState>()(
       ],
       devices: [],
       tunnels: [],
+      storages: [],
       streams: allStreams,
       torrentStream: defaultTorrentStream,
       activeDeviceId: null,
@@ -235,6 +245,56 @@ export const useDashboardStore = create<DashboardState>()(
         });
         await get().fetchTunnels();
       },
+      
+      fetchStorages: async () => {
+        try {
+          const response = await fetch('/api/storages');
+          if (response.ok) {
+            const storages = await response.json();
+            set({ storages });
+          }
+        } catch (error) {
+          console.error("Failed to fetch storages:", error);
+        }
+      },
+      addStorage: async (storage) => {
+        await fetch('/api/storages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storage),
+        });
+        await get().fetchStorages();
+      },
+      updateStorage: async (storage) => {
+        await fetch(`/api/storages/${storage.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storage),
+        });
+        await get().fetchStorages();
+      },
+      removeStorage: async (id) => {
+        await fetch(`/api/storages/${id}`, { method: 'DELETE' });
+        await get().fetchStorages();
+      },
+      mountStorage: async (id) => {
+        set(state => ({ storages: state.storages.map(s => s.id === id ? { ...s, status: 'mounting' } : s) }));
+        await fetch('/api/storages/mount', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ storageId: id }),
+        });
+        await get().fetchStorages();
+      },
+      unmountStorage: async (id) => {
+        set(state => ({ storages: state.storages.map(s => s.id === id ? { ...s, status: 'unmounting' } : s) }));
+        await fetch('/api/storages/unmount', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ storageId: id }),
+        });
+        await get().fetchStorages();
+      },
 
       addStream: (stream) => set((state) => ({
         streams: [...state.streams, { ...stream, id: new Date().toISOString() + Math.random() }]
@@ -269,7 +329,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'eventLogOpen', 'isCommandPaletteOpen'].includes(key))
         ),
     }
   )
