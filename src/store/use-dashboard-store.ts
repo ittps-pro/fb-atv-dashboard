@@ -18,6 +18,7 @@ interface DashboardState {
   widgets: WidgetVisibility;
   devices: Device[];
   activeDeviceId: string | null;
+  deviceStatuses: Record<string, 'online' | 'offline' | 'loading'>;
   tunnels: Tunnel[];
   storages: Storage[];
   actions: DashboardAction[];
@@ -41,6 +42,8 @@ interface DashboardState {
   updateDevice: (device: Device) => Promise<void>;
   removeDevice: (id: string) => Promise<void>;
   setActiveDeviceId: (id: string | null) => void;
+  checkDeviceStatus: (device: Device) => Promise<void>;
+  checkAllDeviceStatuses: () => Promise<void>;
 
   fetchTunnels: () => Promise<void>;
   addTunnel: (tunnel: Omit<Tunnel, 'id' | 'status'>) => Promise<void>;
@@ -121,6 +124,7 @@ export const useDashboardStore = create<DashboardState>()(
       streams: allStreams,
       torrentStream: defaultTorrentStream,
       activeDeviceId: null,
+      deviceStatuses: {},
       logs: [],
       notesContent: '',
       eventLogOpen: false,
@@ -192,6 +196,7 @@ export const useDashboardStore = create<DashboardState>()(
              if (!get().activeDeviceId && devices.length > 0) {
               set({ activeDeviceId: devices[0].id });
             }
+            get().checkAllDeviceStatuses();
           }
         } catch (error) {
           console.error("Failed to fetch devices:", error);
@@ -223,6 +228,37 @@ export const useDashboardStore = create<DashboardState>()(
         await get().fetchDevices();
       },
       setActiveDeviceId: (id) => set({ activeDeviceId: id }),
+      
+      checkDeviceStatus: async (device) => {
+        if (device.connectionType !== 'direct') {
+          set(state => ({
+            deviceStatuses: { ...state.deviceStatuses, [device.id]: 'online' }
+          }));
+          return;
+        }
+        set(state => ({
+          deviceStatuses: { ...state.deviceStatuses, [device.id]: 'loading' }
+        }));
+        try {
+          const response = await fetch('/api/healthcheck/device', {
+            method: 'POST',
+            body: JSON.stringify({ ip: device.ip, port: device.port }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const result = await response.json();
+          set(state => ({
+            deviceStatuses: { ...state.deviceStatuses, [device.id]: result.status === 'online' ? 'online' : 'offline' }
+          }));
+        } catch (error) {
+          set(state => ({
+            deviceStatuses: { ...state.deviceStatuses, [device.id]: 'offline' }
+          }));
+        }
+      },
+      checkAllDeviceStatuses: async () => {
+        const { devices } = get();
+        await Promise.all(devices.map(device => get().checkDeviceStatus(device)));
+      },
       
       fetchTunnels: async () => {
         try {
@@ -405,7 +441,7 @@ export const useDashboardStore = create<DashboardState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'actions', 'eventLogOpen', 'isCommandPaletteOpen', 'logs'].includes(key))
+          Object.entries(state).filter(([key]) => !['tunnels', 'devices', 'storages', 'actions', 'eventLogOpen', 'isCommandPaletteOpen', 'logs', 'deviceStatuses'].includes(key))
         ),
     }
   )
